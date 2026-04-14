@@ -1,0 +1,73 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Force bump type (leave empty to auto-detect from commits)"
+        required: false
+        type: choice
+        options:
+          - ""
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Calculate next version
+        id: version
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          dry_run: true
+          default_bump: ${{ inputs.bump || 'false' }}
+
+      - name: Abort if nothing to release
+        if: steps.version.outputs.new_tag == ''
+        run: |
+          echo "::error::No releasable commits (feat/fix) since last tag. Use the bump input to force."
+          exit 1
+
+      - name: Set up JDK 22
+        uses: actions/setup-java@v5
+        with:
+          java-version: "22"
+          distribution: "temurin"
+
+      - name: Update pom.xml version
+        run: mvn versions:set -DnewVersion=${{ steps.version.outputs.new_version }} -DgenerateBackupPoms=false
+
+      - name: Update package.json version
+        run: npm version ${{ steps.version.outputs.new_version }} --no-git-tag-version
+        working-directory: infrastructure/src/main/webui
+
+      - name: Commit, tag & push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pom.xml */pom.xml infrastructure/src/main/webui/package.json
+          git commit -m "chore: release ${{ steps.version.outputs.new_version }} [skip ci]"
+          git tag ${{ steps.version.outputs.new_tag }}
+          git push origin main --tags
+
+      - name: Trigger CI
+        run: gh workflow run ci.yaml --ref ${{ steps.version.outputs.new_tag }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.new_tag }}
+          body: ${{ steps.version.outputs.changelog }}
