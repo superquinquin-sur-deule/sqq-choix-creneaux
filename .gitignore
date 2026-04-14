@@ -51,3 +51,5 @@ nb-configuration.xml
 CLAUDE.md
 
 infrastructure/src/main/resources/application-dev.properties
+.superpowers
+docs/superpowers

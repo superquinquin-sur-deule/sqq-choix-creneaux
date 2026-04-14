@@ -1,6 +1,10 @@
 package fr.sqq.choixcreneaux.infrastructure.in.rest.common.middleware;
 
+import fr.sqq.choixcreneaux.domain.exception.AlreadyRegisteredException;
+import fr.sqq.choixcreneaux.domain.exception.CampaignNotOpenException;
 import fr.sqq.choixcreneaux.domain.exception.DomainException;
+import fr.sqq.choixcreneaux.domain.exception.SlotFullException;
+import fr.sqq.choixcreneaux.domain.exception.SlotLockedException;
 import fr.sqq.choixcreneaux.infrastructure.in.rest.common.dto.ProblemDetailResponse;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -14,7 +18,14 @@ public class DomainExceptionMapper implements ExceptionMapper<DomainException> {
 
     @Override
     public Response toResponse(DomainException e) {
-        return buildResponse("about:blank", "Domain Error", 400, e.getMessage());
+        int status = switch (e) {
+            case AlreadyRegisteredException ex -> 409;
+            case SlotLockedException ex -> 423;
+            case SlotFullException ex -> 409;
+            case CampaignNotOpenException ex -> 403;
+            default -> 400;
+        };
+        return buildResponse("about:blank", "Domain Error", status, e.getMessage());
     }
 
     private Response buildResponse(String type, String title, int status, String detail) {

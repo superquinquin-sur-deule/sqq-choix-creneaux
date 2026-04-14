@@ -2,9 +2,11 @@
 
 @theme {
   --color-primary: #f1dc43;
-  --color-surface: #f4f3f3;
-  --color-dark: #1d2327;
+  --color-surface: #f8f8f6;
+  --color-dark: #3c312e;
   --color-brown: #453630;
   --color-white: #ffffff;
+  --color-success: #4caf50;
+  --color-alert: #e65100;
   --font-sans: 'Raleway', sans-serif;
 }

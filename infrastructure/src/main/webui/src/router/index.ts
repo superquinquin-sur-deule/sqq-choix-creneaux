@@ -8,6 +8,27 @@ const router = createRouter({
       name: 'home',
       component: () => import('@/views/HomeView.vue'),
     },
+    {
+      path: '/choisir',
+      name: 'slot-selection',
+      component: () => import('@/views/SlotSelectionView.vue'),
+    },
+    {
+      path: '/confirmer/:slotId',
+      name: 'confirmation',
+      component: () => import('@/views/ConfirmationView.vue'),
+      props: true,
+    },
+    {
+      path: '/termine',
+      name: 'done',
+      component: () => import('@/views/DoneView.vue'),
+    },
+    {
+      path: '/admin',
+      name: 'admin',
+      component: () => import('@/views/admin/DashboardView.vue'),
+    },
   ],
 })
 
