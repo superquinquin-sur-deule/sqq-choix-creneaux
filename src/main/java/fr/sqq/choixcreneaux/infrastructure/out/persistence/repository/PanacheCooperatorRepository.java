@@ -42,6 +42,13 @@ public class PanacheCooperatorRepository implements CooperatorRepository {
     }
 
     @Override
+    public List<Cooperator> findAllById(Collection<UUID> ids) {
+        if (ids.isEmpty()) return List.of();
+        return CooperatorEntity.<CooperatorEntity>list("id in ?1", ids).stream()
+                .map(mapper::toDomain).toList();
+    }
+
+    @Override
     @SuppressWarnings("unchecked")
     public List<Cooperator> findWithoutRegistration() {
         return em.createNativeQuery(

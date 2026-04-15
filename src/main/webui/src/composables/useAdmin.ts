@@ -18,11 +18,38 @@ export interface CooperatorResponse {
   lastName: string
 }
 
+export interface RegistrantResponse {
+  firstName: string
+  lastNameInitial: string
+}
+
+export interface AdminSlotResponse {
+  id: string
+  week: string
+  dayOfWeek: string
+  startTime: string
+  endTime: string
+  minCapacity: number
+  maxCapacity: number
+  registrationCount: number
+  status: 'NEEDS_PEOPLE' | 'LOCKED' | 'OPEN' | 'FULL'
+  registrants: RegistrantResponse[]
+}
+
 export function useDashboard() {
   return useQuery({
     queryKey: ['admin', 'dashboard'],
     queryFn: () =>
       customFetch<{ data: DashboardResponse }>('/api/admin/dashboard', { method: 'GET' }).then((r) => r.data),
+    refetchInterval: 15_000,
+  })
+}
+
+export function useAdminSlots() {
+  return useQuery({
+    queryKey: ['admin', 'slots'],
+    queryFn: () =>
+      customFetch<{ data: AdminSlotResponse[] }>('/api/admin/slots', { method: 'GET' }).then((r) => r.data),
     refetchInterval: 15_000,
   })
 }

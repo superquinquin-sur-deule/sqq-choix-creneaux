@@ -39,8 +39,12 @@ export function dayLabel(day: string): string { return DAY_LABELS[day] ?? day }
 export function sortedDays(): string[] {
   return Object.keys(DAY_ORDER).sort((a, b) => DAY_ORDER[a] - DAY_ORDER[b])
 }
-export function slotsForWeekAndDay(slots: SlotResponse[], week: string, day: string): SlotResponse[] {
-  return slots.filter((s) => s.week === week && s.dayOfWeek === day).sort((a, b) => a.startTime.localeCompare(b.startTime))
+export function slotsForWeekAndDay<
+  T extends { week: string; dayOfWeek: string; startTime: string }
+>(slots: T[], week: string, day: string): T[] {
+  return slots
+    .filter((s) => s.week === week && s.dayOfWeek === day)
+    .sort((a, b) => a.startTime.localeCompare(b.startTime))
 }
 export function formatTime(time: string): string {
   const [h, m] = time.split(':')

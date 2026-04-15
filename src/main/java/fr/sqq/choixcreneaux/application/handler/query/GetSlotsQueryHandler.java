@@ -2,7 +2,7 @@ package fr.sqq.choixcreneaux.application.handler.query;
 
 import fr.sqq.choixcreneaux.application.port.out.SlotTemplateRepository;
 import fr.sqq.choixcreneaux.application.query.GetSlotsQuery;
-import fr.sqq.choixcreneaux.domain.model.SlotStatus;
+import fr.sqq.choixcreneaux.domain.model.SlotStatusCalculator;
 import fr.sqq.choixcreneaux.domain.model.SlotWithFillInfo;
 import fr.sqq.mediator.QueryHandler;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -30,15 +30,8 @@ public class GetSlotsQueryHandler implements QueryHandler<GetSlotsQuery, List<Sl
 
         return slots.stream().map(slot -> {
             int count = counts.getOrDefault(slot.id(), 0);
-            SlotStatus status = computeStatus(slot.minCapacity(), slot.maxCapacity(), count, anyUnderMinimum);
+            var status = SlotStatusCalculator.compute(slot.minCapacity(), slot.maxCapacity(), count, anyUnderMinimum);
             return new SlotWithFillInfo(slot, count, status);
         }).toList();
-    }
-
-    private SlotStatus computeStatus(int min, int max, int count, boolean anyUnderMinimum) {
-        if (count >= max) return SlotStatus.FULL;
-        if (count < min) return SlotStatus.NEEDS_PEOPLE;
-        if (anyUnderMinimum) return SlotStatus.LOCKED;
-        return SlotStatus.OPEN;
     }
 }

@@ -6,6 +6,7 @@ public interface CooperatorRepository {
     Optional<Cooperator> findByEmail(String email);
     void linkKeycloakSubject(UUID cooperatorId, String keycloakSubject);
     Optional<Cooperator> findById(UUID id);
+    List<Cooperator> findAllById(Collection<UUID> ids);
     List<Cooperator> findWithoutRegistration();
     long countTotal();
     long countWithRegistration();

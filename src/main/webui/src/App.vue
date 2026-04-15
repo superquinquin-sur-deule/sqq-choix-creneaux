@@ -3,8 +3,8 @@
     <header class="bg-dark shadow-sm">
       <div class="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
         <router-link to="/" class="flex items-center gap-2 no-underline">
-          <span class="text-xl font-bold text-white">Super</span>
-          <span class="text-xl font-bold text-primary">Quinquin</span>
+          <span class="text-xl font-bold text-primary">SuperQuinquin :</span>
+          <span class="text-xl font-bold text-white">choix des créneaux</span>
         </router-link>
         <div class="text-sm text-surface/80">
           <span v-if="me">{{ me.firstName }} {{ me.lastName }}</span>
