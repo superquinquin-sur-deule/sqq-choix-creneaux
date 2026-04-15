@@ -50,6 +50,6 @@ nb-configuration.xml
 .bmad-output
 CLAUDE.md
 
-infrastructure/src/main/resources/application-dev.properties
+src/main/resources/application-dev.properties
 .superpowers
 docs/superpowers
