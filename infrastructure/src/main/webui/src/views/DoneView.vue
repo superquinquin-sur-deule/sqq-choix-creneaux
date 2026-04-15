@@ -39,7 +39,7 @@
     <div class="rounded-lg border border-blue-200 bg-blue-50 px-5 py-4 text-left text-sm text-blue-900">
       <p class="font-medium">Besoin de modifier votre créneau ?</p>
       <p class="mt-1 opacity-80">
-        Si vous souhaitez changer votre créneau, contactez l'administrateur·ice de la coopérative.
+        Si vous souhaitez changer votre créneau, contactez le bureau des membres : <a class="underline" href="mailto://bureaudesmembres.deule@superquinquin.net">bureaudesmembres.deule@superquinquin.net</a>
       </p>
     </div>
   </div>
