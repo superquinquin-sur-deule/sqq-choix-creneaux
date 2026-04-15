@@ -6,7 +6,7 @@ import jakarta.enterprise.event.Observes;
 import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.spi.Bean;
 import jakarta.enterprise.inject.spi.BeanManager;
-import org.jboss.logging.Logger;
+import io.quarkus.logging.Log;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -19,8 +19,6 @@ import java.util.Set;
 
 @ApplicationScoped
 public class QuarkusMediator implements Mediator {
-
-    private static final Logger LOG = Logger.getLogger(QuarkusMediator.class);
 
     private final Map<Class<?>, CommandHandler<?, ?>> commandHandlers = new IdentityHashMap<>();
     private final Map<Class<?>, QueryHandler<?, ?>> queryHandlers = new IdentityHashMap<>();
@@ -62,7 +60,7 @@ public class QuarkusMediator implements Mediator {
 
         pipelineBehaviors.sort(Comparator.comparingInt(PipelineBehavior::order));
 
-        LOG.infof("Mediator: registered %d command handlers, %d query handlers, %d pipeline behaviors",
+        Log.infof("Mediator: registered %d command handlers, %d query handlers, %d pipeline behaviors",
                 commandHandlers.size(), queryHandlers.size(), pipelineBehaviors.size());
     }
 

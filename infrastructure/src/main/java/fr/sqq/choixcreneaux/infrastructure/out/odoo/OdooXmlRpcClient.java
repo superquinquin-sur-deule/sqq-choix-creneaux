@@ -7,8 +7,8 @@ import fr.sqq.choixcreneaux.domain.model.Week;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.apache.xmlrpc.client.XmlRpcClient;
 import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
+import io.quarkus.logging.Log;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.logging.Logger;
 
 import java.net.URL;
 import java.time.DayOfWeek;
@@ -17,8 +17,6 @@ import java.util.*;
 
 @ApplicationScoped
 public class OdooXmlRpcClient implements OdooSyncPort {
-
-    private static final Logger LOG = Logger.getLogger(OdooXmlRpcClient.class);
 
     @ConfigProperty(name = "odoo.url", defaultValue = "http://localhost:8069")
     String odooUrl;
@@ -74,12 +72,12 @@ public class OdooXmlRpcClient implements OdooSyncPort {
                 try {
                     templates.add(mapSlotTemplate(record));
                 } catch (Exception e) {
-                    LOG.warnf("Failed to map slot template %s: %s", record.get("id"), e.getMessage());
+                    Log.warnf("Failed to map slot template %s: %s", record.get("id"), e.getMessage());
                 }
             }
             return templates;
         } catch (Exception e) {
-            LOG.errorf("Failed to pull slot templates from Odoo: %s", e.getMessage());
+            Log.errorf("Failed to pull slot templates from Odoo: %s", e.getMessage());
             return Collections.emptyList();
         }
     }
@@ -155,12 +153,12 @@ public class OdooXmlRpcClient implements OdooSyncPort {
                 try {
                     cooperators.add(mapCooperator(record));
                 } catch (Exception e) {
-                    LOG.warnf("Failed to map cooperator %s: %s", record.get("id"), e.getMessage());
+                    Log.warnf("Failed to map cooperator %s: %s", record.get("id"), e.getMessage());
                 }
             }
             return cooperators;
         } catch (Exception e) {
-            LOG.errorf("Failed to pull cooperators from Odoo: %s", e.getMessage());
+            Log.errorf("Failed to pull cooperators from Odoo: %s", e.getMessage());
             return Collections.emptyList();
         }
     }

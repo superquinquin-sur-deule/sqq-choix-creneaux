@@ -7,15 +7,14 @@ import fr.sqq.choixcreneaux.application.port.out.EmailSender;
 import fr.sqq.choixcreneaux.domain.model.Cooperator;
 import fr.sqq.choixcreneaux.domain.model.EmailType;
 import fr.sqq.mediator.CommandHandler;
+import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.logging.Logger;
 import java.util.List;
 
 @ApplicationScoped
 public class SendReminderCommandHandler implements CommandHandler<SendReminderCommand, Integer> {
-    private static final Logger LOG = Logger.getLogger(SendReminderCommandHandler.class);
     private final CooperatorRepository cooperatorRepo;
     private final EmailSender emailSender;
     private final EmailLogRepository emailLogRepo;
@@ -48,7 +47,7 @@ public class SendReminderCommandHandler implements CommandHandler<SendReminderCo
                 emailLogRepo.log(coop.id(), EmailType.REMINDER);
                 sent++;
             } catch (Exception e) {
-                LOG.warnf("Failed to send reminder to %s: %s", coop.email(), e.getMessage());
+                Log.warnf("Failed to send reminder to %s: %s", coop.email(), e.getMessage());
             }
         }
         return sent;

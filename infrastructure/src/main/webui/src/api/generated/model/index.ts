@@ -5,4 +5,16 @@
  * OpenAPI spec version: 1.0.0
  */
 
+export * from './campaignInfo';
+export * from './cooperatorResponse';
+export * from './dashboardResponse';
+export * from './dayOfWeek';
 export * from './healthResponse';
+export * from './meResponse';
+export * from './pushResponse';
+export * from './reminderRequest';
+export * from './reminderResponse';
+export * from './result';
+export * from './slotResponse';
+export * from './slotsPageResponse';
+export * from './uuid';

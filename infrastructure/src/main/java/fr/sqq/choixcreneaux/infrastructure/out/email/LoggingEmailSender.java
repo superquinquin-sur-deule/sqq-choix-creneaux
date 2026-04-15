@@ -4,8 +4,8 @@ import fr.sqq.choixcreneaux.application.port.out.EmailSender;
 import fr.sqq.choixcreneaux.domain.model.Cooperator;
 import fr.sqq.choixcreneaux.domain.model.SlotTemplate;
 import io.quarkus.arc.profile.UnlessBuildProfile;
+import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
-import org.jboss.logging.Logger;
 
 import java.time.DayOfWeek;
 import java.util.Map;
@@ -13,8 +13,6 @@ import java.util.Map;
 @ApplicationScoped
 @UnlessBuildProfile("prod")
 public class LoggingEmailSender implements EmailSender {
-
-    private static final Logger LOG = Logger.getLogger(LoggingEmailSender.class);
 
     private static final Map<DayOfWeek, String> DAY_NAMES = Map.of(
             DayOfWeek.MONDAY, "Lundi", DayOfWeek.TUESDAY, "Mardi",
@@ -24,7 +22,7 @@ public class LoggingEmailSender implements EmailSender {
 
     @Override
     public void sendConfirmation(Cooperator cooperator, SlotTemplate slot, String weekLabel) {
-        LOG.infof("""
+        Log.infof("""
                 ╔══════════════════════════════════════════════════════════╗
                 ║  📧 EMAIL CONFIRMATION                                  ║
                 ╠══════════════════════════════════════════════════════════╣
@@ -39,7 +37,7 @@ public class LoggingEmailSender implements EmailSender {
 
     @Override
     public void sendReminder(Cooperator cooperator, String appUrl) {
-        LOG.infof("""
+        Log.infof("""
                 ╔══════════════════════════════════════════════════════════╗
                 ║  📧 EMAIL RELANCE                                       ║
                 ╠══════════════════════════════════════════════════════════╣

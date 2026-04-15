@@ -3,13 +3,12 @@ package fr.sqq.choixcreneaux.application.handler.command;
 import fr.sqq.choixcreneaux.application.command.SyncPushCommand;
 import fr.sqq.choixcreneaux.application.port.out.*;
 import fr.sqq.mediator.CommandHandler;
+import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class SyncPushCommandHandler implements CommandHandler<SyncPushCommand, Integer> {
-    private static final Logger LOG = Logger.getLogger(SyncPushCommandHandler.class);
     private final SlotRegistrationRepository registrationRepo;
     private final SlotTemplateRepository slotRepo;
     private final CooperatorRepository cooperatorRepo;
@@ -32,14 +31,14 @@ public class SyncPushCommandHandler implements CommandHandler<SyncPushCommand, I
             var slot = slotRepo.findById(reg.slotTemplateId()).orElse(null);
             var coop = cooperatorRepo.findById(reg.cooperatorId()).orElse(null);
             if (slot == null || coop == null || slot.odooTemplateId() == null || coop.odooPartnerId() == null) {
-                LOG.warnf("Skipping registration %s: missing Odoo IDs", reg.id());
+                Log.warnf("Skipping registration %s: missing Odoo IDs", reg.id());
                 continue;
             }
             try {
                 odoo.pushRegistration(coop.odooPartnerId(), slot.odooTemplateId());
                 pushed++;
             } catch (Exception e) {
-                LOG.errorf("Failed to push registration %s: %s", reg.id(), e.getMessage());
+                Log.errorf("Failed to push registration %s: %s", reg.id(), e.getMessage());
             }
         }
         return pushed;

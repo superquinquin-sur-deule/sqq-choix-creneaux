@@ -3,9 +3,9 @@ package fr.sqq.choixcreneaux.infrastructure.out.email;
 import fr.sqq.choixcreneaux.application.port.out.EmailSender;
 import fr.sqq.choixcreneaux.domain.model.Cooperator;
 import fr.sqq.choixcreneaux.domain.model.SlotTemplate;
+import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.logging.Logger;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -18,7 +18,6 @@ import java.util.Map;
 @io.quarkus.arc.profile.IfBuildProfile("prod")
 public class BrevoEmailSender implements EmailSender {
 
-    private static final Logger LOG = Logger.getLogger(BrevoEmailSender.class);
     private static final String BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
 
     private static final Map<DayOfWeek, String> DAY_NAMES = Map.of(
@@ -48,7 +47,7 @@ public class BrevoEmailSender implements EmailSender {
     @Override
     public void sendConfirmation(Cooperator cooperator, SlotTemplate slot, String weekLabel) {
         if (apiKey == null || apiKey.isBlank()) {
-            LOG.info("Brevo API key not configured, skipping confirmation email to " + cooperator.email());
+            Log.info("Brevo API key not configured, skipping confirmation email to " + cooperator.email());
             return;
         }
         String dayName = DAY_NAMES.getOrDefault(slot.dayOfWeek(), slot.dayOfWeek().name());
@@ -70,7 +69,7 @@ public class BrevoEmailSender implements EmailSender {
     @Override
     public void sendReminder(Cooperator cooperator, String appUrl) {
         if (apiKey == null || apiKey.isBlank()) {
-            LOG.info("Brevo API key not configured, skipping reminder email to " + cooperator.email());
+            Log.info("Brevo API key not configured, skipping reminder email to " + cooperator.email());
             return;
         }
         String params = """
@@ -101,12 +100,12 @@ public class BrevoEmailSender implements EmailSender {
                     .build();
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
-                LOG.info("Email sent via Brevo to " + recipientEmail);
+                Log.info("Email sent via Brevo to " + recipientEmail);
             } else {
-                LOG.warnf("Brevo returned status %d for %s: %s", response.statusCode(), recipientEmail, response.body());
+                Log.warnf("Brevo returned status %d for %s: %s", response.statusCode(), recipientEmail, response.body());
             }
         } catch (Exception e) {
-            LOG.errorf(e, "Failed to send Brevo email to %s", recipientEmail);
+            Log.errorf(e, "Failed to send Brevo email to %s", recipientEmail);
         }
     }
 

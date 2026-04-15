@@ -8,6 +8,7 @@ import fr.sqq.choixcreneaux.application.handler.query.GetSlotsQueryHandler;
 import fr.sqq.choixcreneaux.application.query.GetSlotsQuery;
 import fr.sqq.choixcreneaux.domain.model.EmailType;
 import fr.sqq.mediator.CommandHandler;
+import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -64,7 +65,7 @@ public class ChooseSlotCommandHandler implements CommandHandler<ChooseSlotComman
             emailSender.sendConfirmation(cooperator, slot, slot.week().name());
             emailLogRepo.log(cooperator.id(), EmailType.CONFIRMATION);
         } catch (Exception e) {
-            org.jboss.logging.Logger.getLogger(getClass()).warn("Failed to send confirmation email", e);
+            Log.warn("Failed to send confirmation email", e);
         }
         return null;
     }
