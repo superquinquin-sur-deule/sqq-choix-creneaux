@@ -67,28 +67,19 @@
       </section>
 
       <!-- Cooperators list -->
-      <div>
-        <CooperatorsList
-          v-if="cooperators"
-          :cooperators="cooperators"
-        />
-        <div v-else-if="isPendingCooperators" class="py-4 text-center text-brown/60">
-          Chargement des coopérateur·ices…
-        </div>
-      </div>
+      <CooperatorsList />
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useDashboard, usePendingCooperators, useAdminSlots } from '@/composables/useAdmin'
+import { useDashboard, useAdminSlots } from '@/composables/useAdmin'
 import KpiCards from '@/components/admin/KpiCards.vue'
 import CooperatorsList from '@/components/admin/CooperatorsList.vue'
 import AdminSlotCalendar from '@/components/admin/AdminSlotCalendar.vue'
 
 const { data: dashboard, isPending: isPendingDashboard, isError: isErrorDashboard } = useDashboard()
-const { data: cooperators, isPending: isPendingCooperators } = usePendingCooperators()
 const { data: adminSlots, isPending: isPendingSlots, isError: isErrorSlots } = useAdminSlots()
 
 const weeks = ['A', 'B', 'C', 'D'] as const

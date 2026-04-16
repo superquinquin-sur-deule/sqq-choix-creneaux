@@ -8,6 +8,8 @@ public interface CooperatorRepository {
     Optional<Cooperator> findById(UUID id);
     List<Cooperator> findAllById(Collection<UUID> ids);
     List<Cooperator> findWithoutRegistration();
+    List<Cooperator> findWithoutRegistration(int offset, int limit);
+    long countWithoutRegistration();
     long countTotal();
     long countWithRegistration();
     void saveAll(List<Cooperator> cooperators);

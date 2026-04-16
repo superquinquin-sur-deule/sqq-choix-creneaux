@@ -3,7 +3,7 @@
     <div class="mb-3 flex items-center justify-between">
       <h2 class="text-lg font-semibold text-dark">
         Coopérateur·ices sans créneau
-        <span class="ml-1 text-base font-normal text-brown/60">({{ cooperators.length }})</span>
+        <span class="ml-1 text-base font-normal text-brown/60">({{ total }})</span>
       </h2>
       <div class="flex gap-2">
         <a
@@ -19,7 +19,7 @@
         <button
           type="button"
           class="inline-flex items-center gap-1 rounded-lg bg-dark px-3 py-1.5 text-sm font-medium text-white transition hover:bg-brown disabled:opacity-50"
-          :disabled="isSending || cooperators.length === 0"
+          :disabled="isSending || total === 0"
           @click="remindAll"
         >
           <span v-if="isSending">Envoi…</span>
@@ -32,54 +32,99 @@
       {{ successMessage }}
     </div>
 
-    <div v-if="cooperators.length === 0" class="rounded-lg border border-dashed border-gray-200 py-8 text-center text-brown/50">
+    <div v-if="isPending && !pageData" class="py-8 text-center text-brown/60">
+      Chargement des coopérateur·ices…
+    </div>
+
+    <div v-else-if="total === 0" class="rounded-lg border border-dashed border-gray-200 py-8 text-center text-brown/50">
       Tous les coopérateur·ices ont choisi un créneau !
     </div>
 
-    <div v-else class="overflow-x-auto rounded-lg border border-gray-200">
-      <table class="w-full text-sm">
-        <thead>
-          <tr class="border-b border-gray-200 bg-gray-50">
-            <th class="px-4 py-3 text-left font-medium text-brown/70">Nom</th>
-            <th class="px-4 py-3 text-left font-medium text-brown/70">Email</th>
-            <th class="px-4 py-3 text-right font-medium text-brown/70">Action</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-100">
-          <tr v-for="coop in cooperators" :key="coop.id" class="bg-white hover:bg-gray-50">
-            <td class="px-4 py-3 font-medium text-dark">{{ coop.firstName }} {{ coop.lastName }}</td>
-            <td class="px-4 py-3 text-brown/70">{{ coop.email }}</td>
-            <td class="px-4 py-3 text-right">
-              <button
-                type="button"
-                class="rounded px-2 py-1 text-xs font-medium text-dark transition hover:bg-gray-100 disabled:opacity-50"
-                :disabled="isSending"
-                @click="remindOne(coop.id)"
-              >
-                Relancer
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <template v-else>
+      <div class="overflow-x-auto rounded-lg border border-gray-200">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-gray-200 bg-gray-50">
+              <th class="px-4 py-3 text-left font-medium text-brown/70">Nom</th>
+              <th class="px-4 py-3 text-left font-medium text-brown/70">Email</th>
+              <th class="px-4 py-3 text-right font-medium text-brown/70">Action</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            <tr v-for="coop in items" :key="coop.id" class="bg-white hover:bg-gray-50">
+              <td class="px-4 py-3 font-medium text-dark">{{ coop.firstName }} {{ coop.lastName }}</td>
+              <td class="px-4 py-3 text-brown/70">{{ coop.email }}</td>
+              <td class="px-4 py-3 text-right">
+                <button
+                  type="button"
+                  class="rounded px-2 py-1 text-xs font-medium text-dark transition hover:bg-gray-100 disabled:opacity-50"
+                  :disabled="isSending"
+                  @click="remindOne(coop.id)"
+                >
+                  Relancer
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div v-if="pageCount > 1" class="mt-3 flex items-center justify-between text-sm text-brown/70">
+        <span>
+          {{ rangeStart }}–{{ rangeEnd }} sur {{ total }}
+        </span>
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            class="rounded border border-gray-300 px-2 py-1 text-xs font-medium text-dark transition hover:bg-gray-50 disabled:opacity-50"
+            :disabled="page === 1"
+            @click="page--"
+          >
+            Précédent
+          </button>
+          <span>Page {{ page }} / {{ pageCount }}</span>
+          <button
+            type="button"
+            class="rounded border border-gray-300 px-2 py-1 text-xs font-medium text-dark transition hover:bg-gray-50 disabled:opacity-50"
+            :disabled="page === pageCount"
+            @click="page++"
+          >
+            Suivant
+          </button>
+        </div>
+      </div>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useSendReminders, type CooperatorResponse } from '@/composables/useAdmin'
+import { computed, ref, watch } from 'vue'
+import { usePendingCooperators, useSendReminders } from '@/composables/useAdmin'
 
-defineProps<{
-  cooperators: CooperatorResponse[]
-}>()
+const page = ref(1)
+const size = ref(10)
+
+const { data: pageData, isPending } = usePendingCooperators(page, size)
+
+const items = computed(() => pageData.value?.items ?? [])
+const total = computed(() => pageData.value?.total ?? 0)
+const pageCount = computed(() => Math.max(1, Math.ceil(total.value / size.value)))
+const rangeStart = computed(() => (total.value === 0 ? 0 : (page.value - 1) * size.value + 1))
+const rangeEnd = computed(() => Math.min(page.value * size.value, total.value))
+
+// Keep page in range when total shrinks (e.g. after an action).
+watch(pageCount, (count) => {
+  if (page.value > count) page.value = count
+})
 
 const { mutateAsync, isPending: isSending } = useSendReminders()
 const successMessage = ref<string | null>(null)
 
 async function remindAll() {
   const result = await mutateAsync({ all: true })
-  successMessage.value = `${result.sentCount} rappel${result.sentCount > 1 ? 's' : ''} envoyé${result.sentCount > 1 ? 's' : ''}.`
+  successMessage.value = result.scheduled
+    ? 'Envoi des rappels lancé en arrière-plan.'
+    : `${result.sentCount} rappel${result.sentCount > 1 ? 's' : ''} envoyé${result.sentCount > 1 ? 's' : ''}.`
   setTimeout(() => { successMessage.value = null }, 5000)
 }
 

@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
+import type { Ref } from 'vue'
 import { customFetch } from '@/api/mutator/custom-fetch'
 import type { SlotResponse } from './useSlots'
 
@@ -54,11 +55,22 @@ export function useAdminSlots() {
   })
 }
 
-export function usePendingCooperators() {
+export interface CooperatorsPage {
+  items: CooperatorResponse[]
+  total: number
+  page: number
+  size: number
+}
+
+export function usePendingCooperators(page: Ref<number>, size: Ref<number>) {
   return useQuery({
-    queryKey: ['admin', 'cooperators'],
+    queryKey: ['admin', 'cooperators', page, size],
     queryFn: () =>
-      customFetch<{ data: CooperatorResponse[] }>('/api/admin/cooperators', { method: 'GET' }).then((r) => r.data),
+      customFetch<{ data: CooperatorsPage }>(
+        `/api/admin/cooperators?page=${page.value}&size=${size.value}`,
+        { method: 'GET' },
+      ).then((r) => r.data),
+    placeholderData: (previous) => previous,
   })
 }
 
@@ -66,7 +78,7 @@ export function useSendReminders() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (payload: { cooperatorIds?: string[]; all?: boolean }) =>
-      customFetch<{ data: { sentCount: number } }>('/api/admin/reminders', {
+      customFetch<{ data: { sentCount: number; scheduled: boolean } }>('/api/admin/reminders', {
         method: 'POST',
         body: JSON.stringify(payload),
         headers: { 'Content-Type': 'application/json' },

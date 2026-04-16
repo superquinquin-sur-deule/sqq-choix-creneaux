@@ -48,14 +48,32 @@ public class PanacheCooperatorRepository implements CooperatorRepository {
                 .map(mapper::toDomain).toList();
     }
 
+    private static final String WITHOUT_REGISTRATION_SQL =
+            "SELECT c.* FROM cooperator c LEFT JOIN slot_registration sr ON c.id = sr.cooperator_id WHERE sr.id IS NULL ORDER BY c.last_name, c.first_name";
+
     @Override
     @SuppressWarnings("unchecked")
     public List<Cooperator> findWithoutRegistration() {
-        return em.createNativeQuery(
-                "SELECT c.* FROM cooperator c LEFT JOIN slot_registration sr ON c.id = sr.cooperator_id WHERE sr.id IS NULL ORDER BY c.last_name, c.first_name",
-                CooperatorEntity.class)
+        return em.createNativeQuery(WITHOUT_REGISTRATION_SQL, CooperatorEntity.class)
                 .getResultList().stream()
                 .map(e -> mapper.toDomain((CooperatorEntity) e)).toList();
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public List<Cooperator> findWithoutRegistration(int offset, int limit) {
+        return em.createNativeQuery(WITHOUT_REGISTRATION_SQL, CooperatorEntity.class)
+                .setFirstResult(offset)
+                .setMaxResults(limit)
+                .getResultList().stream()
+                .map(e -> mapper.toDomain((CooperatorEntity) e)).toList();
+    }
+
+    @Override
+    public long countWithoutRegistration() {
+        return ((Number) em.createNativeQuery(
+                "SELECT COUNT(*) FROM cooperator c LEFT JOIN slot_registration sr ON c.id = sr.cooperator_id WHERE sr.id IS NULL")
+                .getSingleResult()).longValue();
     }
 
     @Override
