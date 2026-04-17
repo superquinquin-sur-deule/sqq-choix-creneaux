@@ -47,8 +47,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useSlots } from '@/composables/useSlots'
+import { ref, computed, watch } from 'vue'
+import { useSlots, type SlotResponse } from '@/composables/useSlots'
 import PhaseBanner from '@/components/PhaseBanner.vue'
 import WeekTabs from '@/components/WeekTabs.vue'
 import SlotCalendar from '@/components/SlotCalendar.vue'
@@ -61,6 +61,38 @@ const selectedSlotId = ref<string | null>(null)
 const slotsNeedingCount = computed(
   () => data.value?.slots.filter((s) => s.status === 'NEEDS_PEOPLE').length ?? 0,
 )
+
+let autoWeekPicked = false
+watch(
+  data,
+  (d) => {
+    if (autoWeekPicked || !d?.slots?.length) return
+    autoWeekPicked = true
+    activeWeek.value = leastFilledWeek(d.slots) ?? activeWeek.value
+  },
+  { immediate: true },
+)
+
+function leastFilledWeek(slots: SlotResponse[]): string | null {
+  const stats = new Map<string, { filled: number; capacity: number }>()
+  for (const s of slots) {
+    const cur = stats.get(s.week) ?? { filled: 0, capacity: 0 }
+    cur.filled += s.registrationCount
+    cur.capacity += s.maxCapacity
+    stats.set(s.week, cur)
+  }
+  let best: string | null = null
+  let bestRatio = Infinity
+  for (const [week, { filled, capacity }] of stats) {
+    if (capacity === 0) continue
+    const ratio = filled / capacity
+    if (ratio < bestRatio) {
+      bestRatio = ratio
+      best = week
+    }
+  }
+  return best
+}
 
 function handleSelect(id: string) {
   selectedSlotId.value = selectedSlotId.value === id ? null : id

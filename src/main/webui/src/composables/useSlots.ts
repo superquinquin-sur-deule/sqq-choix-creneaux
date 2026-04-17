@@ -28,16 +28,25 @@ export function useSlots() {
 }
 
 const DAY_ORDER: Record<string, number> = {
-  MONDAY: 0, TUESDAY: 1, WEDNESDAY: 2, THURSDAY: 3, FRIDAY: 4, SATURDAY: 5,
+  MONDAY: 0,
+  TUESDAY: 1,
+  WEDNESDAY: 2,
+  THURSDAY: 3,
+  FRIDAY: 4,
+  SATURDAY: 5,
 }
 const DAY_LABELS: Record<string, string> = {
-  MONDAY: 'Lundi', TUESDAY: 'Mardi', WEDNESDAY: 'Mercredi',
-  THURSDAY: 'Jeudi', FRIDAY: 'Vendredi', SATURDAY: 'Samedi',
+  MONDAY: 'Lundi',
+  TUESDAY: 'Mardi',
+  WEDNESDAY: 'Mercredi',
+  THURSDAY: 'Jeudi',
+  FRIDAY: 'Vendredi',
+  SATURDAY: 'Samedi',
 }
 
 export function dayLabel(day: string): string { return DAY_LABELS[day] ?? day }
 export function sortedDays(): string[] {
-  return Object.keys(DAY_ORDER).sort((a, b) => DAY_ORDER[a] - DAY_ORDER[b])
+  return Object.keys(DAY_ORDER).sort((a, b) => DAY_ORDER[a]! - DAY_ORDER[b]!)
 }
 export function slotsForWeekAndDay<
   T extends { week: string; dayOfWeek: string; startTime: string }
@@ -55,7 +64,7 @@ export function computeWeekLetter(date: Date, weekARef: Date): string {
   const msPerWeek = 7 * 24 * 60 * 60 * 1000
   const diffWeeks = Math.floor((date.getTime() - weekARef.getTime()) / msPerWeek)
   const index = ((diffWeeks % 4) + 4) % 4
-  return ['A', 'B', 'C', 'D'][index]
+  return ['A', 'B', 'C', 'D'][index]!
 }
 
 export function firstMondayAfterOpening(targetWeek: string, storeOpening: string, weekAReference: string): string {
