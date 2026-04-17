@@ -53,3 +53,8 @@ CLAUDE.md
 src/main/resources/application-dev.properties
 .superpowers
 docs/superpowers
+
+# Python
+scripts/.venv/
+__pycache__/
+*.pyc
