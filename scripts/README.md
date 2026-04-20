@@ -2,7 +2,7 @@
 
 Developer utilities.
 
-## pull_creneaux.py
+## odoo_admin.py
 
 Two modes against Odoo:
 
@@ -21,11 +21,11 @@ export ODOO_DB=mydb
 export ODOO_USERNAME=admin
 export ODOO_PASSWORD=secret
 
-./scripts/pull_creneaux.sh pull                      # both (default)
-./scripts/pull_creneaux.sh pull slots                # only shift.template
-./scripts/pull_creneaux.sh pull cooperators          # only res.partner
-./scripts/pull_creneaux.sh create-slots shifts.csv   # create from CSV
-./scripts/pull_creneaux.sh create-slots shifts.csv --dry-run  # validate only
+./scripts/odoo_admin.sh pull                      # both (default)
+./scripts/odoo_admin.sh pull slots                # only shift.template
+./scripts/odoo_admin.sh pull cooperators          # only res.partner
+./scripts/odoo_admin.sh create-slots shifts.csv   # create from CSV
+./scripts/odoo_admin.sh create-slots shifts.csv --dry-run  # validate only
 ```
 
 ### CSV format (create-slots)
@@ -57,7 +57,7 @@ Or run the Python directly if you manage the venv yourself:
 ```sh
 python3 -m venv scripts/.venv
 scripts/.venv/bin/pip install -r scripts/requirements.txt
-scripts/.venv/bin/python scripts/pull_creneaux.py
+scripts/.venv/bin/python scripts/odoo_admin.py
 ```
 
 Defaults match `application.properties`: `http://localhost:8069`, db `odoo`,

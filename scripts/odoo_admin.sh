@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Create the venv if missing, install/sync requirements, then run pull_creneaux.py.
+# Create the venv if missing, install/sync requirements, then run odoo_admin.py.
 # Forwards any args to the Python script. Env vars (ODOO_URL, ODOO_DB, ...) are inherited.
 set -euo pipefail
 
@@ -21,4 +21,4 @@ if [[ ! -f "$STAMP" ]] || [[ "$(cat "$STAMP")" != "$CURRENT_HASH" ]]; then
     echo "$CURRENT_HASH" > "$STAMP"
 fi
 
-exec "$VENV/bin/python" "$SCRIPT_DIR/pull_creneaux.py" "$@"
+exec "$VENV/bin/python" "$SCRIPT_DIR/odoo_admin.py" "$@"
