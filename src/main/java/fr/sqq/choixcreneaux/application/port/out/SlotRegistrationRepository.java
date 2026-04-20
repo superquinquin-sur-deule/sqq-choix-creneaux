@@ -6,4 +6,5 @@ public interface SlotRegistrationRepository {
     SlotRegistration save(UUID slotTemplateId, UUID cooperatorId);
     int countBySlotTemplateId(UUID slotTemplateId);
     List<SlotRegistration> findAll();
+    void deleteByCooperatorId(UUID cooperatorId);
 }

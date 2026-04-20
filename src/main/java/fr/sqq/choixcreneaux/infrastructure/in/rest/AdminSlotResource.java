@@ -1,13 +1,18 @@
 package fr.sqq.choixcreneaux.infrastructure.in.rest;
 
+import fr.sqq.choixcreneaux.application.command.AdminAssignSlotCommand;
+import fr.sqq.choixcreneaux.application.command.AdminAssignSlotResult;
 import fr.sqq.choixcreneaux.application.query.GetAdminSlotsQuery;
 import fr.sqq.choixcreneaux.domain.model.AdminSlotView;
 import fr.sqq.choixcreneaux.domain.model.RegistrantSummary;
 import fr.sqq.mediator.Mediator;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
@@ -29,6 +34,17 @@ public class AdminSlotResource {
                 .map(AdminSlotResponse::from)
                 .toList();
     }
+
+    @POST
+    @Path("/{slotId}/assign")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public AssignResponse assign(@PathParam("slotId") UUID slotId, AssignRequest body) {
+        AdminAssignSlotResult result = mediator.send(new AdminAssignSlotCommand(slotId, body.cooperatorId()));
+        return new AssignResponse(result.moved());
+    }
+
+    public record AssignRequest(UUID cooperatorId) {}
+    public record AssignResponse(boolean moved) {}
 
     public record AdminSlotResponse(
             UUID id,

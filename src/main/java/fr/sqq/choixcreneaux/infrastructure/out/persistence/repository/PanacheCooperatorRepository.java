@@ -77,6 +77,29 @@ public class PanacheCooperatorRepository implements CooperatorRepository {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
+    public List<Cooperator> search(String q, int offset, int limit) {
+        String pattern = "%" + (q == null ? "" : q.trim().toLowerCase()) + "%";
+        return em.createNativeQuery(
+                "SELECT * FROM cooperator WHERE LOWER(first_name) LIKE ?1 OR LOWER(last_name) LIKE ?1 OR LOWER(email) LIKE ?1 ORDER BY last_name, first_name",
+                CooperatorEntity.class)
+                .setParameter(1, pattern)
+                .setFirstResult(offset)
+                .setMaxResults(limit)
+                .getResultList().stream()
+                .map(e -> mapper.toDomain((CooperatorEntity) e)).toList();
+    }
+
+    @Override
+    public long countSearch(String q) {
+        String pattern = "%" + (q == null ? "" : q.trim().toLowerCase()) + "%";
+        return ((Number) em.createNativeQuery(
+                "SELECT COUNT(*) FROM cooperator WHERE LOWER(first_name) LIKE ?1 OR LOWER(last_name) LIKE ?1 OR LOWER(email) LIKE ?1")
+                .setParameter(1, pattern)
+                .getSingleResult()).longValue();
+    }
+
+    @Override
     public long countTotal() { return CooperatorEntity.count(); }
 
     @Override

@@ -46,6 +46,16 @@
         </span>
       </div>
     </div>
+
+    <div v-if="slot.status !== 'FULL'" class="mt-2 flex justify-end">
+      <button
+        type="button"
+        class="rounded px-2 py-0.5 text-xs font-medium text-dark transition hover:bg-white/70"
+        @click="$emit('assign', slot.id)"
+      >
+        + Ajouter
+      </button>
+    </div>
   </div>
 </template>
 
@@ -59,6 +69,8 @@ const props = defineProps<{
   slot: AdminSlotResponse
   dimmed?: boolean
 }>()
+
+defineEmits<{ assign: [string] }>()
 
 const cardClass = computed(() => {
   switch (props.slot.status) {

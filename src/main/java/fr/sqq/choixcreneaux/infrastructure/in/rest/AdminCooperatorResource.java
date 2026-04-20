@@ -3,6 +3,7 @@ package fr.sqq.choixcreneaux.infrastructure.in.rest;
 import fr.sqq.choixcreneaux.application.query.GetPendingCooperatorsPageQuery;
 import fr.sqq.choixcreneaux.application.query.GetPendingCooperatorsQuery;
 import fr.sqq.choixcreneaux.application.query.PendingCooperatorsPage;
+import fr.sqq.choixcreneaux.application.query.SearchCooperatorsQuery;
 import fr.sqq.choixcreneaux.domain.model.Cooperator;
 import fr.sqq.mediator.Mediator;
 import jakarta.annotation.security.RolesAllowed;
@@ -30,6 +31,20 @@ public class AdminCooperatorResource {
             @QueryParam("page") @DefaultValue("1") int page,
             @QueryParam("size") @DefaultValue("10") int size) {
         PendingCooperatorsPage result = mediator.send(new GetPendingCooperatorsPageQuery(page, size));
+        List<CooperatorResponse> items = result.items().stream()
+                .map(c -> new CooperatorResponse(c.id(), c.email(), c.firstName(), c.lastName()))
+                .toList();
+        return new PageResponse(items, result.total(), page, size);
+    }
+
+    @GET
+    @Path("/search")
+    @Produces(MediaType.APPLICATION_JSON)
+    public PageResponse search(
+            @QueryParam("q") @DefaultValue("") String q,
+            @QueryParam("page") @DefaultValue("1") int page,
+            @QueryParam("size") @DefaultValue("10") int size) {
+        PendingCooperatorsPage result = mediator.send(new SearchCooperatorsQuery(q, page, size));
         List<CooperatorResponse> items = result.items().stream()
                 .map(c -> new CooperatorResponse(c.id(), c.email(), c.firstName(), c.lastName()))
                 .toList();

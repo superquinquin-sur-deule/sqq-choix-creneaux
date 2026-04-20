@@ -40,4 +40,9 @@ public class PanacheSlotRegistrationRepository implements SlotRegistrationReposi
         return SlotRegistrationEntity.<SlotRegistrationEntity>findAll().stream()
                 .map(mapper::toDomain).toList();
     }
+
+    @Override
+    public void deleteByCooperatorId(UUID cooperatorId) {
+        SlotRegistrationEntity.delete("cooperatorId", cooperatorId);
+    }
 }

@@ -10,6 +10,8 @@ public interface CooperatorRepository {
     List<Cooperator> findWithoutRegistration();
     List<Cooperator> findWithoutRegistration(int offset, int limit);
     long countWithoutRegistration();
+    List<Cooperator> search(String q, int offset, int limit);
+    long countSearch(String q);
     long countTotal();
     long countWithRegistration();
     void saveAll(List<Cooperator> cooperators);

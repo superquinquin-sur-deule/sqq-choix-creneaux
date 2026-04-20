@@ -74,6 +74,33 @@ export function usePendingCooperators(page: Ref<number>, size: Ref<number>) {
   })
 }
 
+export function useSearchCooperators(q: Ref<string>, page: Ref<number>, size: Ref<number>) {
+  return useQuery({
+    queryKey: ['admin', 'cooperators', 'search', q, page, size],
+    queryFn: () =>
+      customFetch<{ data: CooperatorsPage }>(
+        `/api/admin/cooperators/search?q=${encodeURIComponent(q.value)}&page=${page.value}&size=${size.value}`,
+        { method: 'GET' },
+      ).then((r) => r.data),
+    placeholderData: (previous) => previous,
+  })
+}
+
+export function useAssignSlot() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ slotId, cooperatorId }: { slotId: string; cooperatorId: string }) =>
+      customFetch<{ data: { moved: boolean } }>(`/api/admin/slots/${slotId}/assign`, {
+        method: 'POST',
+        body: JSON.stringify({ cooperatorId }),
+        headers: { 'Content-Type': 'application/json' },
+      }).then((r) => r.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin'] })
+    },
+  })
+}
+
 export function useSendReminders() {
   const queryClient = useQueryClient()
   return useMutation({
