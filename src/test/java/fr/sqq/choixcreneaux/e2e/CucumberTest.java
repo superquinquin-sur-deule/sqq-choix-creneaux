@@ -1,4 +1,4 @@
-package fr.sqq.choixcreneaux.acceptance;
+package fr.sqq.choixcreneaux.e2e;
 
 import io.quarkiverse.cucumber.CucumberQuarkusTest;
 import io.quarkus.test.junit.QuarkusTest;
