@@ -6,14 +6,14 @@
       </h1>
       <p class="mt-2 text-lg text-brown">Choix de créneaux de bénévolat</p>
 
-      <div v-if="isPending" class="mt-8 text-brown/60">Chargement…</div>
+      <div v-if="isPending || isPendingReg" class="mt-8 text-brown/60">Chargement…</div>
 
       <div v-else-if="me" class="mt-8 space-y-4">
         <p class="text-dark">
           Bonjour, <strong>{{ me.firstName }} {{ me.lastName }}</strong> !
         </p>
 
-        <div v-if="me.registeredSlotId">
+        <div v-if="registration?.registeredSlotId">
           <p class="mb-3 text-sm text-brown">Vous avez déjà choisi un créneau.</p>
           <router-link
             to="/termine"
@@ -42,7 +42,8 @@
 </template>
 
 <script setup lang="ts">
-import { useMe } from '@/composables/useMe'
+import { useMe, useMyRegistration } from '@/composables/useMe'
 
 const { data: me, isPending, isError } = useMe()
+const { data: registration, isPending: isPendingReg } = useMyRegistration()
 </script>

@@ -1,0 +1,29 @@
+package fr.sqq.choixcreneaux.application.handler.command;
+
+import fr.sqq.choixcreneaux.application.command.SyncCooperatorsCommand;
+import fr.sqq.choixcreneaux.application.port.out.CooperatorRepository;
+import fr.sqq.choixcreneaux.application.port.out.OdooSyncPort;
+import fr.sqq.mediator.CommandHandler;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
+
+@ApplicationScoped
+public class SyncCooperatorsCommandHandler implements CommandHandler<SyncCooperatorsCommand, SyncCooperatorsCommand.Result> {
+    private final OdooSyncPort odoo;
+    private final CooperatorRepository cooperatorRepo;
+
+    @Inject
+    public SyncCooperatorsCommandHandler(OdooSyncPort odoo, CooperatorRepository cooperatorRepo) {
+        this.odoo = odoo;
+        this.cooperatorRepo = cooperatorRepo;
+    }
+
+    @Override
+    @Transactional
+    public SyncCooperatorsCommand.Result handle(SyncCooperatorsCommand command) {
+        var cooperators = odoo.pullCooperators();
+        cooperatorRepo.saveAll(cooperators);
+        return new SyncCooperatorsCommand.Result(cooperators.size());
+    }
+}

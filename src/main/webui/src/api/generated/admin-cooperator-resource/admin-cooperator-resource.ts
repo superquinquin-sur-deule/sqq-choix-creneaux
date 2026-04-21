@@ -5,7 +5,9 @@
  * OpenAPI spec version: 1.0.0
  */
 import type {
-  CooperatorResponse
+  GetApiAdminCooperatorsParams,
+  GetApiAdminCooperatorsSearchParams,
+  PageResponse
 } from '../model';
 
 import { customFetch } from '../../mutator/custom-fetch';
@@ -14,7 +16,7 @@ import { customFetch } from '../../mutator/custom-fetch';
  * @summary Get Pending Cooperators
  */
 export type getApiAdminCooperatorsResponse200 = {
-  data: CooperatorResponse[]
+  data: PageResponse
   status: 200
 }
 
@@ -37,17 +39,24 @@ export type getApiAdminCooperatorsResponseError = (getApiAdminCooperatorsRespons
 
 export type getApiAdminCooperatorsResponse = (getApiAdminCooperatorsResponseSuccess | getApiAdminCooperatorsResponseError)
 
-export const getGetApiAdminCooperatorsUrl = () => {
+export const getGetApiAdminCooperatorsUrl = (params?: GetApiAdminCooperatorsParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/admin/cooperators`
+  return stringifiedParams.length > 0 ? `/api/admin/cooperators?${stringifiedParams}` : `/api/admin/cooperators`
 }
 
-export const getApiAdminCooperators = async ( options?: RequestInit): Promise<getApiAdminCooperatorsResponse> => {
+export const getApiAdminCooperators = async (params?: GetApiAdminCooperatorsParams, options?: RequestInit): Promise<getApiAdminCooperatorsResponse> => {
 
-  return customFetch<getApiAdminCooperatorsResponse>(getGetApiAdminCooperatorsUrl(),
+  return customFetch<getApiAdminCooperatorsResponse>(getGetApiAdminCooperatorsUrl(params),
   {
     ...options,
     method: 'GET'
@@ -95,6 +104,60 @@ export const getGetApiAdminCooperatorsExportUrl = () => {
 export const getApiAdminCooperatorsExport = async ( options?: RequestInit): Promise<getApiAdminCooperatorsExportResponse> => {
 
   return customFetch<getApiAdminCooperatorsExportResponse>(getGetApiAdminCooperatorsExportUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+/**
+ * @summary Search
+ */
+export type getApiAdminCooperatorsSearchResponse200 = {
+  data: PageResponse
+  status: 200
+}
+
+export type getApiAdminCooperatorsSearchResponse401 = {
+  data: void
+  status: 401
+}
+
+export type getApiAdminCooperatorsSearchResponse403 = {
+  data: void
+  status: 403
+}
+
+export type getApiAdminCooperatorsSearchResponseSuccess = (getApiAdminCooperatorsSearchResponse200) & {
+  headers: Headers;
+};
+export type getApiAdminCooperatorsSearchResponseError = (getApiAdminCooperatorsSearchResponse401 | getApiAdminCooperatorsSearchResponse403) & {
+  headers: Headers;
+};
+
+export type getApiAdminCooperatorsSearchResponse = (getApiAdminCooperatorsSearchResponseSuccess | getApiAdminCooperatorsSearchResponseError)
+
+export const getGetApiAdminCooperatorsSearchUrl = (params?: GetApiAdminCooperatorsSearchParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/cooperators/search?${stringifiedParams}` : `/api/admin/cooperators/search`
+}
+
+export const getApiAdminCooperatorsSearch = async (params?: GetApiAdminCooperatorsSearchParams, options?: RequestInit): Promise<getApiAdminCooperatorsSearchResponse> => {
+
+  return customFetch<getApiAdminCooperatorsSearchResponse>(getGetApiAdminCooperatorsSearchUrl(params),
   {
     ...options,
     method: 'GET'

@@ -6,16 +6,64 @@
  */
 import type {
   PushResponse,
-  Result
+  Result,
+  Result1
 } from '../model';
 
 import { customFetch } from '../../mutator/custom-fetch';
 
 /**
+ * @summary Sync Cooperators
+ */
+export type postApiAdminSyncCooperatorsResponse200 = {
+  data: Result
+  status: 200
+}
+
+export type postApiAdminSyncCooperatorsResponse401 = {
+  data: void
+  status: 401
+}
+
+export type postApiAdminSyncCooperatorsResponse403 = {
+  data: void
+  status: 403
+}
+
+export type postApiAdminSyncCooperatorsResponseSuccess = (postApiAdminSyncCooperatorsResponse200) & {
+  headers: Headers;
+};
+export type postApiAdminSyncCooperatorsResponseError = (postApiAdminSyncCooperatorsResponse401 | postApiAdminSyncCooperatorsResponse403) & {
+  headers: Headers;
+};
+
+export type postApiAdminSyncCooperatorsResponse = (postApiAdminSyncCooperatorsResponseSuccess | postApiAdminSyncCooperatorsResponseError)
+
+export const getPostApiAdminSyncCooperatorsUrl = () => {
+
+
+
+
+  return `/api/admin/sync/cooperators`
+}
+
+export const postApiAdminSyncCooperators = async ( options?: RequestInit): Promise<postApiAdminSyncCooperatorsResponse> => {
+
+  return customFetch<postApiAdminSyncCooperatorsResponse>(getPostApiAdminSyncCooperatorsUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+/**
  * @summary Pull
  */
 export type postApiAdminSyncPullResponse200 = {
-  data: Result
+  data: Result1
   status: 200
 }
 

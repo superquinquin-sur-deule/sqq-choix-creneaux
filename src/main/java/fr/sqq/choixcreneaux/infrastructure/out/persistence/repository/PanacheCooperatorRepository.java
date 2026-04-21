@@ -16,8 +16,8 @@ public class PanacheCooperatorRepository implements CooperatorRepository {
     @Inject EntityManager em;
 
     @Override
-    public Optional<Cooperator> findByKeycloakSubject(String subject) {
-        return CooperatorEntity.<CooperatorEntity>find("keycloakSubject", subject)
+    public Optional<Cooperator> findByBarcodeBase(String barcodeBase) {
+        return CooperatorEntity.<CooperatorEntity>find("barcodeBase", barcodeBase)
                 .firstResultOptional().map(mapper::toDomain);
     }
 
@@ -25,15 +25,6 @@ public class PanacheCooperatorRepository implements CooperatorRepository {
     public Optional<Cooperator> findByEmail(String email) {
         return CooperatorEntity.<CooperatorEntity>find("email", email)
                 .firstResultOptional().map(mapper::toDomain);
-    }
-
-    @Override
-    @Transactional
-    public void linkKeycloakSubject(UUID cooperatorId, String keycloakSubject) {
-        CooperatorEntity.<CooperatorEntity>findByIdOptional(cooperatorId).ifPresent(entity -> {
-            entity.keycloakSubject = keycloakSubject;
-            entity.persist();
-        });
     }
 
     @Override
@@ -112,13 +103,23 @@ public class PanacheCooperatorRepository implements CooperatorRepository {
     @Transactional
     public void saveAll(List<Cooperator> cooperators) {
         for (var c : cooperators) {
-            var entity = new CooperatorEntity();
-            entity.id = c.id() != null ? c.id() : UUID.randomUUID();
+            CooperatorEntity entity = null;
+            if (c.odooPartnerId() != null) {
+                entity = CooperatorEntity.<CooperatorEntity>find("odooPartnerId", c.odooPartnerId())
+                        .firstResult();
+            }
+            if (entity == null && c.email() != null && !c.email().isBlank()) {
+                entity = CooperatorEntity.<CooperatorEntity>find("email", c.email()).firstResult();
+            }
+            if (entity == null) {
+                entity = new CooperatorEntity();
+                entity.id = c.id() != null ? c.id() : UUID.randomUUID();
+            }
             entity.email = c.email();
             entity.firstName = c.firstName();
             entity.lastName = c.lastName();
-            entity.odooPartnerId = c.odooPartnerId();
-            entity.keycloakSubject = c.keycloakSubject();
+            if (c.odooPartnerId() != null) entity.odooPartnerId = c.odooPartnerId();
+            entity.barcodeBase = c.barcodeBase();
             entity.persist();
         }
     }

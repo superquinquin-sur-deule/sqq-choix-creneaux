@@ -26,8 +26,8 @@ public class RegistrationResource {
     @POST
     @Path("/{slotId}/register")
     public Response register(@PathParam("slotId") UUID slotId) {
-        String subject = identity.getPrincipal().getName();
-        mediator.send(new ChooseSlotCommand(slotId, subject));
+        String barcodeBase = identity.getPrincipal().getName();
+        mediator.send(new ChooseSlotCommand(slotId, barcodeBase));
         return Response.noContent().build();
     }
 }

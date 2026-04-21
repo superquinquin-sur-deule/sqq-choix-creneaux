@@ -17,7 +17,7 @@ import java.util.UUID;
 
 @Path("/api/admin/reminders")
 @Produces(MediaType.APPLICATION_JSON)
-@RolesAllowed("admin")
+//@RolesAllowed("admin")
 public class AdminReminderResource {
 
     @Inject

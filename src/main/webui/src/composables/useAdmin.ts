@@ -101,6 +101,33 @@ export function useAssignSlot() {
   })
 }
 
+export function useSyncCooperators() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () =>
+      customFetch<{ data: { cooperatorsImported: number } }>('/api/admin/sync/cooperators', {
+        method: 'POST',
+      }).then((r) => r.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin'] })
+    },
+  })
+}
+
+export function useSyncSlots() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () =>
+      customFetch<{ data: { slotsImported: number; cooperatorsImported: number } }>(
+        '/api/admin/sync/pull',
+        { method: 'POST' },
+      ).then((r) => r.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin'] })
+    },
+  })
+}
+
 export function useSendReminders() {
   const queryClient = useQueryClient()
   return useMutation({

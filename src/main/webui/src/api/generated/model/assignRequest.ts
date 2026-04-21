@@ -4,7 +4,8 @@
  * Choix Creneaux API
  * OpenAPI spec version: 1.0.0
  */
+import type { Uuid } from './uuid';
 
-export interface Result {
-  cooperatorsImported: number;
+export interface AssignRequest {
+  cooperatorId: Uuid;
 }

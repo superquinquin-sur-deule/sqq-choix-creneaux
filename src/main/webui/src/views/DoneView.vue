@@ -31,7 +31,7 @@
       </dl>
     </div>
 
-    <div v-else-if="isPendingMe || isPendingSlots" class="mb-8 py-6 text-brown/60">
+    <div v-else-if="isPendingReg || isPendingSlots" class="mb-8 py-6 text-brown/60">
       Chargement…
     </div>
 
@@ -47,14 +47,14 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useMe } from '@/composables/useMe'
+import { useMyRegistration } from '@/composables/useMe'
 import { useSlots, dayLabel, formatTime } from '@/composables/useSlots'
 
-const { data: me, isPending: isPendingMe } = useMe()
+const { data: registration, isPending: isPendingReg } = useMyRegistration()
 const { data: slotsData, isPending: isPendingSlots } = useSlots()
 
 const slot = computed(() => {
-  if (!me.value?.registeredSlotId || !slotsData.value) return null
-  return slotsData.value.slots.find((s) => s.id === me.value!.registeredSlotId) ?? null
+  if (!registration.value?.registeredSlotId || !slotsData.value) return null
+  return slotsData.value.slots.find((s) => s.id === registration.value!.registeredSlotId) ?? null
 })
 </script>

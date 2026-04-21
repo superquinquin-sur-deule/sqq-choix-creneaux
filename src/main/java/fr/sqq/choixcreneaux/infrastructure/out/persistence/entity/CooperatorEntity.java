@@ -12,5 +12,5 @@ public class CooperatorEntity extends PanacheEntityBase {
     @Column(name = "first_name", nullable = false) public String firstName;
     @Column(name = "last_name", nullable = false) public String lastName;
     @Column(name = "odoo_partner_id", unique = true) public Long odooPartnerId;
-    @Column(name = "keycloak_subject", unique = true) public String keycloakSubject;
+    @Column(name = "barcode_base", nullable = false, unique = true) public String barcodeBase;
 }

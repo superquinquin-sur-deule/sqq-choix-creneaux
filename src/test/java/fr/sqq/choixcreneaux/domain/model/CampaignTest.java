@@ -10,7 +10,7 @@ class CampaignTest {
 
     @Test
     void firstOccurrenceAfterOpening_returns_correct_monday_for_each_week() {
-        var campaign = new Campaign(null, CampaignStatus.OPEN, null, null, STORE_OPENING, WEEK_A_REF);
+        var campaign = new Campaign(CampaignStatus.OPEN, STORE_OPENING, WEEK_A_REF);
         assertThat(campaign.firstMondayAfterOpening(Week.C)).isEqualTo(LocalDate.of(2026, 5, 18));
         assertThat(campaign.firstMondayAfterOpening(Week.D)).isEqualTo(LocalDate.of(2026, 5, 25));
         assertThat(campaign.firstMondayAfterOpening(Week.A)).isEqualTo(LocalDate.of(2026, 6, 1));

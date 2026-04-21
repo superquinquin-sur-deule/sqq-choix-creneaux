@@ -1,5 +1,6 @@
 package fr.sqq.choixcreneaux.infrastructure.in.rest;
 
+import fr.sqq.choixcreneaux.application.command.SyncCooperatorsCommand;
 import fr.sqq.choixcreneaux.application.command.SyncPullCommand;
 import fr.sqq.choixcreneaux.application.command.SyncPushCommand;
 import fr.sqq.mediator.Mediator;
@@ -11,7 +12,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
 @Path("/api/admin/sync")
-@RolesAllowed("admin")
+//@RolesAllowed("admin")
 @Produces(MediaType.APPLICATION_JSON)
 public class AdminSyncResource {
 
@@ -28,6 +29,12 @@ public class AdminSyncResource {
     @Path("/push")
     public PushResponse push() {
         return new PushResponse(mediator.send(new SyncPushCommand()));
+    }
+
+    @POST
+    @Path("/cooperators")
+    public SyncCooperatorsCommand.Result syncCooperators() {
+        return mediator.send(new SyncCooperatorsCommand());
     }
 
     public record PushResponse(int pushedCount) {}

@@ -6,17 +6,22 @@
  */
 
 export * from './adminSlotResponse';
+export * from './assignRequest';
+export * from './assignResponse';
 export * from './campaignInfo';
 export * from './cooperatorResponse';
 export * from './dashboardResponse';
 export * from './dayOfWeek';
+export * from './getApiAdminCooperatorsParams';
+export * from './getApiAdminCooperatorsSearchParams';
 export * from './healthResponse';
 export * from './meResponse';
+export * from './pageResponse';
 export * from './pushResponse';
 export * from './registrantResponse';
 export * from './reminderRequest';
-export * from './reminderResponse';
 export * from './result';
+export * from './result1';
 export * from './slotResponse';
 export * from './slotsPageResponse';
 export * from './uuid';

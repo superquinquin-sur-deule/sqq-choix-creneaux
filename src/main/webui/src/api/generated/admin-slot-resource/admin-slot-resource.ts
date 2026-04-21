@@ -5,7 +5,10 @@
  * OpenAPI spec version: 1.0.0
  */
 import type {
-  AdminSlotResponse
+  AdminSlotResponse,
+  AssignRequest,
+  AssignResponse,
+  Uuid
 } from '../model';
 
 import { customFetch } from '../../mutator/custom-fetch';
@@ -53,6 +56,60 @@ export const getApiAdminSlots = async ( options?: RequestInit): Promise<getApiAd
     method: 'GET'
 
 
+  }
+);}
+
+
+/**
+ * @summary Assign
+ */
+export type postApiAdminSlotsSlotIdAssignResponse200 = {
+  data: AssignResponse
+  status: 200
+}
+
+export type postApiAdminSlotsSlotIdAssignResponse400 = {
+  data: void
+  status: 400
+}
+
+export type postApiAdminSlotsSlotIdAssignResponse401 = {
+  data: void
+  status: 401
+}
+
+export type postApiAdminSlotsSlotIdAssignResponse403 = {
+  data: void
+  status: 403
+}
+
+export type postApiAdminSlotsSlotIdAssignResponseSuccess = (postApiAdminSlotsSlotIdAssignResponse200) & {
+  headers: Headers;
+};
+export type postApiAdminSlotsSlotIdAssignResponseError = (postApiAdminSlotsSlotIdAssignResponse400 | postApiAdminSlotsSlotIdAssignResponse401 | postApiAdminSlotsSlotIdAssignResponse403) & {
+  headers: Headers;
+};
+
+export type postApiAdminSlotsSlotIdAssignResponse = (postApiAdminSlotsSlotIdAssignResponseSuccess | postApiAdminSlotsSlotIdAssignResponseError)
+
+export const getPostApiAdminSlotsSlotIdAssignUrl = (slotId: Uuid,) => {
+
+
+
+
+  return `/api/admin/slots/${slotId}/assign`
+}
+
+export const postApiAdminSlotsSlotIdAssign = async (slotId: Uuid,
+    assignRequest: AssignRequest, options?: RequestInit): Promise<postApiAdminSlotsSlotIdAssignResponse> => {
+
+  return customFetch<postApiAdminSlotsSlotIdAssignResponse>(getPostApiAdminSlotsSlotIdAssignUrl(slotId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      assignRequest,)
   }
 );}
 

@@ -5,8 +5,7 @@
  * OpenAPI spec version: 1.0.0
  */
 import type {
-  ReminderRequest,
-  ReminderResponse
+  ReminderRequest
 } from '../model';
 
 import { customFetch } from '../../mutator/custom-fetch';
@@ -15,7 +14,7 @@ import { customFetch } from '../../mutator/custom-fetch';
  * @summary Send Reminders
  */
 export type postApiAdminRemindersResponse200 = {
-  data: ReminderResponse
+  data: unknown
   status: 200
 }
 

@@ -5,6 +5,7 @@
  * OpenAPI spec version: 1.0.0
  */
 
-export interface Result {
+export interface Result1 {
+  slotsImported: number;
   cooperatorsImported: number;
 }

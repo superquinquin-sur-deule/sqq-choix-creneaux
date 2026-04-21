@@ -1,7 +1,7 @@
 package fr.sqq.choixcreneaux.infrastructure.in.rest;
 
-import fr.sqq.choixcreneaux.application.port.out.CampaignRepository;
 import fr.sqq.choixcreneaux.application.query.GetSlotsQuery;
+import fr.sqq.choixcreneaux.domain.model.Campaign;
 import fr.sqq.choixcreneaux.domain.model.SlotWithFillInfo;
 import fr.sqq.mediator.Mediator;
 import jakarta.inject.Inject;
@@ -22,16 +22,12 @@ public class SlotResource {
     Mediator mediator;
 
     @Inject
-    CampaignRepository campaignRepo;
+    Campaign campaign;
 
     @GET
     public SlotsPageResponse getSlots() {
         List<SlotWithFillInfo> slots = mediator.send(new GetSlotsQuery());
-        var campaign = campaignRepo.findActive().orElse(null);
-        CampaignInfo campaignInfo = null;
-        if (campaign != null) {
-            campaignInfo = new CampaignInfo(campaign.storeOpening().toString(), campaign.weekAReference().toString());
-        }
+        CampaignInfo campaignInfo = new CampaignInfo(campaign.storeOpening().toString(), campaign.weekAReference().toString());
         return new SlotsPageResponse(slots.stream().map(SlotResponse::from).toList(), campaignInfo);
     }
 

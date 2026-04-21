@@ -60,10 +60,10 @@ public class OdooXmlRpcClient implements OdooSyncPort {
             int uid = authenticate();
             Map<String, Object> kwargs = new HashMap<>();
             kwargs.put("fields", new Object[]{"id", "week_name", "week_list", "start_datetime", "end_datetime",
-                    "worker_nb_min", "worker_nb_max"});
-            kwargs.put("domain", new Object[]{new Object[]{"active", "=", true}});
+                    "worker_nb_min", "worker_nb_max", "seats_min", "seats_max"});
+            Object[] domain = new Object[]{new Object[]{"active", "=", true}};
             Object[] result = (Object[]) execute(uid, "shift.template", "search_read",
-                    new Object[]{new Object[]{}}, kwargs);
+                    new Object[]{domain}, kwargs);
 
             List<SlotTemplate> templates = new ArrayList<>();
             for (Object item : result) {
@@ -88,8 +88,8 @@ public class OdooXmlRpcClient implements OdooSyncPort {
         String weekList = (String) record.get("week_list");
         String startDatetime = (String) record.get("start_datetime");
         String endDatetime = (String) record.get("end_datetime");
-        int minCapacity = record.get("worker_nb_min") instanceof Number n ? n.intValue() : 1;
-        int maxCapacity = record.get("worker_nb_max") instanceof Number n ? n.intValue() : 10;
+        int minCapacity = firstPositiveInt(record, "worker_nb_min", "seats_min", 1);
+        int maxCapacity = firstPositiveInt(record, "worker_nb_max", "seats_max", 10);
 
         Week week = mapWeek(weekName);
         DayOfWeek dayOfWeek = mapDayOfWeek(weekList);
@@ -97,6 +97,12 @@ public class OdooXmlRpcClient implements OdooSyncPort {
         LocalTime endTime = extractTime(endDatetime);
 
         return new SlotTemplate(UUID.randomUUID(), week, dayOfWeek, startTime, endTime, minCapacity, maxCapacity, odooId);
+    }
+
+    private int firstPositiveInt(Map<String, Object> record, String primaryKey, String fallbackKey, int defaultValue) {
+        if (record.get(primaryKey) instanceof Number n && n.intValue() > 0) return n.intValue();
+        if (record.get(fallbackKey) instanceof Number n && n.intValue() > 0) return n.intValue();
+        return defaultValue;
     }
 
     private Week mapWeek(String weekName) {
@@ -112,15 +118,18 @@ public class OdooXmlRpcClient implements OdooSyncPort {
 
     private DayOfWeek mapDayOfWeek(String weekList) {
         if (weekList == null) return DayOfWeek.MONDAY;
-        return switch (weekList.trim().toLowerCase()) {
-            case "0", "monday", "lundi" -> DayOfWeek.MONDAY;
-            case "1", "tuesday", "mardi" -> DayOfWeek.TUESDAY;
-            case "2", "wednesday", "mercredi" -> DayOfWeek.WEDNESDAY;
-            case "3", "thursday", "jeudi" -> DayOfWeek.THURSDAY;
-            case "4", "friday", "vendredi" -> DayOfWeek.FRIDAY;
-            case "5", "saturday", "samedi" -> DayOfWeek.SATURDAY;
-            case "6", "sunday", "dimanche" -> DayOfWeek.SUNDAY;
-            default -> DayOfWeek.MONDAY;
+        return switch (weekList.trim().toUpperCase()) {
+            case "MO" -> DayOfWeek.MONDAY;
+            case "TU" -> DayOfWeek.TUESDAY;
+            case "WE" -> DayOfWeek.WEDNESDAY;
+            case "TH" -> DayOfWeek.THURSDAY;
+            case "FR" -> DayOfWeek.FRIDAY;
+            case "SA" -> DayOfWeek.SATURDAY;
+            case "SU" -> DayOfWeek.SUNDAY;
+            default -> {
+                Log.warnf("Unknown week_list value from Odoo: '%s' — defaulting to MONDAY", weekList);
+                yield DayOfWeek.MONDAY;
+            }
         };
     }
 
@@ -141,10 +150,13 @@ public class OdooXmlRpcClient implements OdooSyncPort {
         try {
             int uid = authenticate();
             Map<String, Object> kwargs = new HashMap<>();
-            kwargs.put("fields", new Object[]{"id", "email", "name", "working_state"});
-            kwargs.put("domain", new Object[]{new Object[]{"working_state", "!=", "blocked"}});
+            kwargs.put("fields", new Object[]{"id", "email", "name", "barcode_base"});
+            Object[] domain = new Object[]{
+                    new Object[]{"is_member", "=", true},
+                    new Object[]{"user_ids", "!=", false}
+            };
             Object[] result = (Object[]) execute(uid, "res.partner", "search_read",
-                    new Object[]{new Object[]{}}, kwargs);
+                    new Object[]{domain}, kwargs);
 
             List<Cooperator> cooperators = new ArrayList<>();
             for (Object item : result) {
@@ -167,11 +179,15 @@ public class OdooXmlRpcClient implements OdooSyncPort {
         long odooId = ((Number) record.get("id")).longValue();
         String email = record.get("email") instanceof String s ? s : "";
         String fullName = record.get("name") instanceof String s ? s : "";
+        if (!(record.get("barcode_base") instanceof Number barcodeNumber) || barcodeNumber.longValue() == 0L) {
+            throw new IllegalStateException("Cooperator " + odooId + " has no barcode_base");
+        }
+        String barcodeBase = String.valueOf(barcodeNumber.longValue());
         String[] nameParts = fullName.trim().split(" ", 2);
         String firstName = nameParts[0];
         String lastName = nameParts.length > 1 ? nameParts[1] : "";
 
-        return new Cooperator(UUID.randomUUID(), email, firstName, lastName, odooId, null);
+        return new Cooperator(UUID.randomUUID(), email, firstName, lastName, odooId, barcodeBase);
     }
 
     @Override

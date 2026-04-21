@@ -5,6 +5,8 @@
  * OpenAPI spec version: 1.0.0
  */
 
-export interface Result {
-  cooperatorsImported: number;
-}
+export type GetApiAdminCooperatorsSearchParams = {
+page?: number;
+q?: string;
+size?: number;
+};

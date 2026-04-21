@@ -29,6 +29,11 @@ const router = createRouter({
       name: 'admin',
       component: () => import('@/views/admin/DashboardView.vue'),
     },
+    {
+      path: '/admin/sync',
+      name: 'admin-sync',
+      component: () => import('@/views/admin/SyncView.vue'),
+    },
   ],
 })
 

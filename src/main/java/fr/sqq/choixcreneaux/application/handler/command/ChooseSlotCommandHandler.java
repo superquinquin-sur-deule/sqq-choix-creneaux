@@ -3,6 +3,7 @@ package fr.sqq.choixcreneaux.application.handler.command;
 import fr.sqq.choixcreneaux.application.command.ChooseSlotCommand;
 import fr.sqq.choixcreneaux.application.port.out.*;
 import fr.sqq.choixcreneaux.domain.exception.*;
+import fr.sqq.choixcreneaux.domain.model.Campaign;
 import fr.sqq.choixcreneaux.domain.model.SlotStatus;
 import fr.sqq.choixcreneaux.application.handler.query.GetSlotsQueryHandler;
 import fr.sqq.choixcreneaux.application.query.GetSlotsQuery;
@@ -18,20 +19,20 @@ public class ChooseSlotCommandHandler implements CommandHandler<ChooseSlotComman
     private final SlotTemplateRepository slotRepo;
     private final CooperatorRepository cooperatorRepo;
     private final SlotRegistrationRepository registrationRepo;
-    private final CampaignRepository campaignRepo;
+    private final Campaign campaign;
     private final EmailSender emailSender;
     private final EmailLogRepository emailLogRepo;
     private final GetSlotsQueryHandler slotsHandler;
 
     @Inject
     public ChooseSlotCommandHandler(SlotTemplateRepository slotRepo, CooperatorRepository cooperatorRepo,
-                                     SlotRegistrationRepository registrationRepo, CampaignRepository campaignRepo,
+                                     SlotRegistrationRepository registrationRepo, Campaign campaign,
                                      EmailSender emailSender, EmailLogRepository emailLogRepo,
                                      GetSlotsQueryHandler slotsHandler) {
         this.slotRepo = slotRepo;
         this.cooperatorRepo = cooperatorRepo;
         this.registrationRepo = registrationRepo;
-        this.campaignRepo = campaignRepo;
+        this.campaign = campaign;
         this.emailSender = emailSender;
         this.emailLogRepo = emailLogRepo;
         this.slotsHandler = slotsHandler;
@@ -40,9 +41,9 @@ public class ChooseSlotCommandHandler implements CommandHandler<ChooseSlotComman
     @Override
     @Transactional
     public Void handle(ChooseSlotCommand command) {
-        campaignRepo.findActive().orElseThrow(CampaignNotOpenException::new);
-        var cooperator = cooperatorRepo.findByKeycloakSubject(command.keycloakSubject())
-                .orElseThrow(() -> new RuntimeException("Cooperator not found"));
+        if (!campaign.isOpen()) throw new CampaignNotOpenException();
+        var cooperator = cooperatorRepo.findByBarcodeBase(command.barcodeBase())
+                .orElseThrow(() -> new RuntimeException("Cooperator with barcode base %s not found".formatted(command.barcodeBase())));
         if (registrationRepo.findByCooperatorId(cooperator.id()).isPresent()) {
             throw new AlreadyRegisteredException();
         }
