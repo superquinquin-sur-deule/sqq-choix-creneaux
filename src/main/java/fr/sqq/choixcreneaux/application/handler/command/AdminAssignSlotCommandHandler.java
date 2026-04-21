@@ -3,26 +3,32 @@ package fr.sqq.choixcreneaux.application.handler.command;
 import fr.sqq.choixcreneaux.application.command.AdminAssignSlotCommand;
 import fr.sqq.choixcreneaux.application.command.AdminAssignSlotResult;
 import fr.sqq.choixcreneaux.application.port.out.*;
-import fr.sqq.choixcreneaux.domain.exception.SlotFullException;
 import fr.sqq.choixcreneaux.domain.model.EmailType;
+import fr.sqq.choixcreneaux.domain.model.Slot;
 import fr.sqq.mediator.CommandHandler;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.persistence.OptimisticLockException;
 import jakarta.transaction.Transactional;
+import org.eclipse.microprofile.faulttolerance.Retry;
+import org.hibernate.StaleStateException;
+
+import java.time.temporal.ChronoUnit;
 
 @ApplicationScoped
 public class AdminAssignSlotCommandHandler implements CommandHandler<AdminAssignSlotCommand, AdminAssignSlotResult> {
-    private final SlotTemplateRepository slotRepo;
+
+    private final SlotRepository slotRepo;
     private final CooperatorRepository cooperatorRepo;
     private final SlotRegistrationRepository registrationRepo;
     private final EmailSender emailSender;
     private final EmailLogRepository emailLogRepo;
 
     @Inject
-    public AdminAssignSlotCommandHandler(SlotTemplateRepository slotRepo, CooperatorRepository cooperatorRepo,
-                                          SlotRegistrationRepository registrationRepo,
-                                          EmailSender emailSender, EmailLogRepository emailLogRepo) {
+    public AdminAssignSlotCommandHandler(SlotRepository slotRepo, CooperatorRepository cooperatorRepo,
+                                         SlotRegistrationRepository registrationRepo,
+                                         EmailSender emailSender, EmailLogRepository emailLogRepo) {
         this.slotRepo = slotRepo;
         this.cooperatorRepo = cooperatorRepo;
         this.registrationRepo = registrationRepo;
@@ -31,12 +37,12 @@ public class AdminAssignSlotCommandHandler implements CommandHandler<AdminAssign
     }
 
     @Override
+    @Retry(maxRetries = 3, delay = 20, jitter = 10, delayUnit = ChronoUnit.MILLIS,
+            retryOn = {OptimisticLockException.class, StaleStateException.class})
     @Transactional
     public AdminAssignSlotResult handle(AdminAssignSlotCommand command) {
         var cooperator = cooperatorRepo.findById(command.cooperatorId())
                 .orElseThrow(() -> new RuntimeException("Cooperator not found"));
-        var slot = slotRepo.findById(command.slotTemplateId())
-                .orElseThrow(() -> new RuntimeException("Slot not found"));
 
         var existing = registrationRepo.findByCooperatorId(cooperator.id());
         boolean moved = false;
@@ -46,17 +52,20 @@ public class AdminAssignSlotCommandHandler implements CommandHandler<AdminAssign
             }
             Log.infof("Admin move: cooperator %s from slot %s to slot %s",
                     cooperator.id(), existing.get().slotTemplateId(), command.slotTemplateId());
-            registrationRepo.deleteByCooperatorId(cooperator.id());
+            Slot sourceSlot = slotRepo.findById(existing.get().slotTemplateId())
+                    .orElseThrow(() -> new RuntimeException("Source slot not found"));
+            sourceSlot.unregister(cooperator.id());
+            slotRepo.save(sourceSlot);
             moved = true;
         }
 
-        int freshCount = registrationRepo.countBySlotTemplateId(command.slotTemplateId());
-        if (freshCount >= slot.maxCapacity()) throw new SlotFullException();
-
-        registrationRepo.save(command.slotTemplateId(), cooperator.id());
+        Slot targetSlot = slotRepo.findById(command.slotTemplateId())
+                .orElseThrow(() -> new RuntimeException("Slot not found"));
+        targetSlot.adminAssign(cooperator);
+        slotRepo.save(targetSlot);
 
         try {
-            emailSender.sendConfirmation(cooperator, slot, slot.week().name());
+            emailSender.sendConfirmation(cooperator, targetSlot.asTemplateView(), targetSlot.week().name());
             emailLogRepo.log(cooperator.id(), EmailType.CONFIRMATION);
         } catch (Exception e) {
             Log.warn("Failed to send confirmation email", e);

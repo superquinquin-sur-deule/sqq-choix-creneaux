@@ -5,5 +5,4 @@ public interface SlotTemplateRepository {
     List<SlotTemplate> findAll();
     Optional<SlotTemplate> findById(UUID id);
     Map<UUID, Integer> countRegistrationsPerSlot();
-    void saveAll(List<SlotTemplate> templates);
 }

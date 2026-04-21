@@ -20,6 +20,9 @@ import java.time.DayOfWeek;
 import java.util.List;
 import java.util.UUID;
 
+//TODO: Extrait les dtos dans un un dossier dto
+//TODO: Fusionne toutes les resources admin pour avoir une seule classe avec tous les endpoints
+//TODO: Ajoute mapstruct pour faire le mapping des entre les dto d'api et ceux de la couche application
 @Path("/api/admin/slots")
 @Produces(MediaType.APPLICATION_JSON)
 @RolesAllowed({"Member Manager", "Foodcoop Admin"})
