@@ -22,7 +22,7 @@ import java.util.UUID;
 
 @Path("/api/admin/slots")
 @Produces(MediaType.APPLICATION_JSON)
-//@RolesAllowed("admin")
+@RolesAllowed({"Member Manager", "Foodcoop Admin"})
 public class AdminSlotResource {
 
     @Inject

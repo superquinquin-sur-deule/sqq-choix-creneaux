@@ -13,7 +13,7 @@ import java.util.List;
 
 @Path("/api/admin/dashboard")
 @Produces(MediaType.APPLICATION_JSON)
-//@RolesAllowed("admin")
+@RolesAllowed({"Member Manager", "Foodcoop Admin"})
 public class AdminDashboardResource {
 
     @Inject

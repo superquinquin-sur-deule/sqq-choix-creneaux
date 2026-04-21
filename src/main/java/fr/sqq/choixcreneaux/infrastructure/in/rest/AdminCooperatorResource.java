@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Path("/api/admin/cooperators")
-//@RolesAllowed("admin")
+@RolesAllowed({"Member Manager", "Foodcoop Admin"})
 public class AdminCooperatorResource {
 
     @Inject
