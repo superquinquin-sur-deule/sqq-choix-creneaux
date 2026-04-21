@@ -1,4 +1,4 @@
-package fr.sqq.choixcreneaux.domain.model;
+package fr.sqq.choixcreneaux.application.query;
 
 import java.util.UUID;
 

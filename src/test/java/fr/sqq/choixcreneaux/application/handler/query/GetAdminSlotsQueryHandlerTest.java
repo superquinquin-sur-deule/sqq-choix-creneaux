@@ -4,6 +4,7 @@ import fr.sqq.choixcreneaux.application.port.out.CooperatorRepository;
 import fr.sqq.choixcreneaux.application.port.out.SlotRegistrationRepository;
 import fr.sqq.choixcreneaux.application.port.out.SlotTemplateRepository;
 import fr.sqq.choixcreneaux.application.query.GetAdminSlotsQuery;
+import fr.sqq.choixcreneaux.application.query.RegistrantSummary;
 import fr.sqq.choixcreneaux.domain.model.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

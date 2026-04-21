@@ -1,8 +1,8 @@
 package fr.sqq.choixcreneaux.infrastructure.in.rest;
 
 import fr.sqq.choixcreneaux.application.query.GetSlotsQuery;
+import fr.sqq.choixcreneaux.application.query.SlotWithFillInfo;
 import fr.sqq.choixcreneaux.domain.model.Campaign;
-import fr.sqq.choixcreneaux.domain.model.SlotWithFillInfo;
 import fr.sqq.mediator.Mediator;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;

@@ -1,9 +1,9 @@
 package fr.sqq.choixcreneaux.infrastructure.in.rest;
 
 import fr.sqq.choixcreneaux.application.command.AdminAssignSlotCommand;
+import fr.sqq.choixcreneaux.application.query.AdminSlotView;
 import fr.sqq.choixcreneaux.application.query.GetAdminSlotsQuery;
-import fr.sqq.choixcreneaux.domain.model.AdminSlotView;
-import fr.sqq.choixcreneaux.domain.model.RegistrantSummary;
+import fr.sqq.choixcreneaux.application.query.RegistrantSummary;
 import fr.sqq.mediator.Mediator;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;

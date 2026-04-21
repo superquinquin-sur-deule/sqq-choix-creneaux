@@ -2,7 +2,6 @@ package fr.sqq.choixcreneaux.application.query;
 
 import fr.sqq.choixcreneaux.application.port.out.SlotTemplateRepository;
 import fr.sqq.choixcreneaux.domain.model.SlotStatusCalculator;
-import fr.sqq.choixcreneaux.domain.model.SlotWithFillInfo;
 import fr.sqq.mediator.Query;
 import fr.sqq.mediator.QueryHandler;
 import jakarta.enterprise.context.ApplicationScoped;

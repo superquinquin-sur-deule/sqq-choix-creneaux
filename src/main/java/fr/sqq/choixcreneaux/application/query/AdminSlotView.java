@@ -1,5 +1,7 @@
-package fr.sqq.choixcreneaux.domain.model;
+package fr.sqq.choixcreneaux.application.query;
 
+import fr.sqq.choixcreneaux.domain.model.SlotStatus;
+import fr.sqq.choixcreneaux.domain.model.SlotTemplate;
 import java.util.List;
 
 public record AdminSlotView(
