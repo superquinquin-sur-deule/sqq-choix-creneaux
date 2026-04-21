@@ -14,7 +14,7 @@ import static org.mockito.Mockito.when;
 
 class GetSlotsQueryHandlerTest {
     private SlotTemplateRepository slotRepo;
-    private GetSlotsQueryHandler handler;
+    private GetSlotsQuery.Handler handler;
 
     private static SlotTemplate slot(String id, int min, int max) {
         return new SlotTemplate(UUID.fromString(id), Week.A, DayOfWeek.MONDAY,
@@ -24,7 +24,7 @@ class GetSlotsQueryHandlerTest {
     @BeforeEach
     void setUp() {
         slotRepo = Mockito.mock(SlotTemplateRepository.class);
-        handler = new GetSlotsQueryHandler(slotRepo);
+        handler = new GetSlotsQuery.Handler(slotRepo);
     }
 
     @Test

@@ -26,7 +26,7 @@ class ChooseSlotCommandHandlerTest {
     private Campaign campaign;
     private EmailSender emailSender;
     private EmailLogRepository emailLogRepo;
-    private ChooseSlotCommandHandler handler;
+    private ChooseSlotCommand.Handler handler;
 
     private static final UUID SLOT_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
     private static final UUID SLOT_ID_2 = UUID.fromString("00000000-0000-0000-0000-000000000002");
@@ -60,7 +60,7 @@ class ChooseSlotCommandHandlerTest {
         campaign = new Campaign(CampaignStatus.OPEN, LocalDate.of(2026, 5, 18), LocalDate.of(2015, 12, 28));
         emailSender = Mockito.mock(EmailSender.class);
         emailLogRepo = Mockito.mock(EmailLogRepository.class);
-        handler = new ChooseSlotCommandHandler(slotRepo, cooperatorRepo, registrationRepo, campaign, emailSender, emailLogRepo);
+        handler = new ChooseSlotCommand.Handler(slotRepo, cooperatorRepo, registrationRepo, campaign, emailSender, emailLogRepo);
 
         when(cooperatorRepo.findByBarcodeBase(BARCODE_BASE)).thenReturn(Optional.of(COOP));
         when(registrationRepo.findByCooperatorId(COOP_ID)).thenReturn(Optional.empty());
@@ -105,7 +105,7 @@ class ChooseSlotCommandHandlerTest {
     @Test
     void rejects_when_campaign_not_open() {
         var closedCampaign = new Campaign(CampaignStatus.CLOSED, LocalDate.of(2026, 5, 18), LocalDate.of(2015, 12, 28));
-        handler = new ChooseSlotCommandHandler(slotRepo, cooperatorRepo, registrationRepo, closedCampaign, emailSender, emailLogRepo);
+        handler = new ChooseSlotCommand.Handler(slotRepo, cooperatorRepo, registrationRepo, closedCampaign, emailSender, emailLogRepo);
         when(slotRepo.findAll()).thenReturn(List.of(slot(2), otherSlot(2)));
         assertThatThrownBy(() -> handler.handle(new ChooseSlotCommand(SLOT_ID, BARCODE_BASE)))
                 .isInstanceOf(CampaignNotOpenException.class);

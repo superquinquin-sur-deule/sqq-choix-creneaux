@@ -1,7 +1,6 @@
 package fr.sqq.choixcreneaux.infrastructure.in.rest;
 
 import fr.sqq.choixcreneaux.application.command.AdminAssignSlotCommand;
-import fr.sqq.choixcreneaux.application.command.AdminAssignSlotResult;
 import fr.sqq.choixcreneaux.application.query.GetAdminSlotsQuery;
 import fr.sqq.choixcreneaux.domain.model.AdminSlotView;
 import fr.sqq.choixcreneaux.domain.model.RegistrantSummary;
@@ -42,7 +41,7 @@ public class AdminSlotResource {
     @Path("/{slotId}/assign")
     @Consumes(MediaType.APPLICATION_JSON)
     public AssignResponse assign(@PathParam("slotId") UUID slotId, AssignRequest body) {
-        AdminAssignSlotResult result = mediator.send(new AdminAssignSlotCommand(slotId, body.cooperatorId()));
+        AdminAssignSlotCommand.Result result = mediator.send(new AdminAssignSlotCommand(slotId, body.cooperatorId()));
         return new AssignResponse(result.moved());
     }
 

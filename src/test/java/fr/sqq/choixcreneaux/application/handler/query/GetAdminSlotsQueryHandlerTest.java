@@ -23,7 +23,7 @@ class GetAdminSlotsQueryHandlerTest {
     private SlotTemplateRepository slotRepo;
     private SlotRegistrationRepository registrationRepo;
     private CooperatorRepository cooperatorRepo;
-    private GetAdminSlotsQueryHandler handler;
+    private GetAdminSlotsQuery.Handler handler;
 
     private static SlotTemplate slot(String id, int min, int max) {
         return new SlotTemplate(UUID.fromString(id), Week.A, DayOfWeek.MONDAY,
@@ -45,7 +45,7 @@ class GetAdminSlotsQueryHandlerTest {
         slotRepo = Mockito.mock(SlotTemplateRepository.class);
         registrationRepo = Mockito.mock(SlotRegistrationRepository.class);
         cooperatorRepo = Mockito.mock(CooperatorRepository.class);
-        handler = new GetAdminSlotsQueryHandler(slotRepo, registrationRepo, cooperatorRepo);
+        handler = new GetAdminSlotsQuery.Handler(slotRepo, registrationRepo, cooperatorRepo);
     }
 
     @Test
