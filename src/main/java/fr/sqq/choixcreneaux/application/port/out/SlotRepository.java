@@ -11,4 +11,5 @@ public interface SlotRepository {
     List<Slot> findAll();
     void save(Slot slot);
     void saveAll(List<Slot> slots);
+    boolean anyUnderMinimum();
 }

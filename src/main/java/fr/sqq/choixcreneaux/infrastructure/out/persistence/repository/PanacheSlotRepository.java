@@ -3,6 +3,7 @@ package fr.sqq.choixcreneaux.infrastructure.out.persistence.repository;
 import fr.sqq.choixcreneaux.application.port.out.SlotRepository;
 import fr.sqq.choixcreneaux.domain.model.Slot;
 import fr.sqq.choixcreneaux.domain.model.SlotRegistration;
+import fr.sqq.choixcreneaux.domain.model.SlotStatus;
 import fr.sqq.choixcreneaux.domain.model.Week;
 import fr.sqq.choixcreneaux.infrastructure.out.persistence.entity.SlotRegistrationEntity;
 import fr.sqq.choixcreneaux.infrastructure.out.persistence.entity.SlotTemplateEntity;
@@ -67,6 +68,15 @@ public class PanacheSlotRepository implements SlotRepository {
         }
     }
 
+    @Override
+    public boolean anyUnderMinimum() {
+        Number n = (Number) em.createNativeQuery(
+                "SELECT COUNT(*) FROM slot_template t WHERE " +
+                "(SELECT COUNT(*) FROM slot_registration r WHERE r.slot_template_id = t.id) < t.min_capacity")
+                .getSingleResult();
+        return n.longValue() > 0;
+    }
+
     private void reconcileRegistrations(Slot slot) {
         List<SlotRegistrationEntity> existing = SlotRegistrationEntity.list("slotTemplateId", slot.id());
         Set<UUID> aggCoops = new HashSet<>();
@@ -96,6 +106,7 @@ public class PanacheSlotRepository implements SlotRepository {
         entity.minCapacity = slot.minCapacity();
         entity.maxCapacity = slot.maxCapacity();
         entity.odooTemplateId = slot.odooTemplateId();
+        entity.status = slot.status().name();
     }
 
     private List<SlotRegistration> loadRegistrations(UUID slotId) {
@@ -118,7 +129,8 @@ public class PanacheSlotRepository implements SlotRepository {
                 entity.maxCapacity,
                 entity.odooTemplateId,
                 entity.version,
-                registrations
+                registrations,
+                SlotStatus.valueOf(entity.status)
         );
     }
 }

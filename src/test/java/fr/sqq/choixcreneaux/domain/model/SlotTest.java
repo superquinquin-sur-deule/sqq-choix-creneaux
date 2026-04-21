@@ -3,7 +3,6 @@ package fr.sqq.choixcreneaux.domain.model;
 import fr.sqq.choixcreneaux.domain.exception.AlreadyRegisteredException;
 import fr.sqq.choixcreneaux.domain.exception.CampaignNotOpenException;
 import fr.sqq.choixcreneaux.domain.exception.SlotFullException;
-import fr.sqq.choixcreneaux.domain.exception.SlotLockedException;
 import org.junit.jupiter.api.Test;
 
 import java.time.DayOfWeek;
@@ -30,13 +29,13 @@ class SlotTest {
             regs.add(new SlotRegistration(UUID.randomUUID(), SLOT_ID, UUID.randomUUID(), Instant.now()));
         }
         return Slot.rehydrate(SLOT_ID, Week.A, DayOfWeek.MONDAY, LocalTime.of(9, 0), LocalTime.of(12, 0),
-                min, max, null, 0, regs);
+                min, max, null, 0, regs, SlotStatus.NEEDS_PEOPLE);
     }
 
     @Test
     void register_adds_cooperator() {
         var slot = slotWith(0, 1, 3);
-        slot.register(COOP, SlotLockPolicy.unlocked(), OPEN);
+        slot.register(COOP, OPEN);
         assertThat(slot.hasCooperator(COOP.id())).isTrue();
         assertThat(slot.registrationCount()).isEqualTo(1);
     }
@@ -44,53 +43,49 @@ class SlotTest {
     @Test
     void register_rejects_when_full() {
         var slot = slotWith(3, 1, 3);
-        assertThatThrownBy(() -> slot.register(COOP, SlotLockPolicy.unlocked(), OPEN))
+        assertThatThrownBy(() -> slot.register(COOP, OPEN))
                 .isInstanceOf(SlotFullException.class);
     }
 
     @Test
     void register_rejects_when_campaign_closed() {
         var slot = slotWith(0, 1, 3);
-        assertThatThrownBy(() -> slot.register(COOP, SlotLockPolicy.unlocked(), CLOSED))
+        assertThatThrownBy(() -> slot.register(COOP, CLOSED))
                 .isInstanceOf(CampaignNotOpenException.class);
     }
 
     @Test
     void register_rejects_duplicate() {
         var slot = slotWith(0, 1, 3);
-        slot.register(COOP, SlotLockPolicy.unlocked(), OPEN);
-        assertThatThrownBy(() -> slot.register(COOP, SlotLockPolicy.unlocked(), OPEN))
+        slot.register(COOP, OPEN);
+        assertThatThrownBy(() -> slot.register(COOP, OPEN))
                 .isInstanceOf(AlreadyRegisteredException.class);
     }
 
     @Test
-    void register_rejects_when_locked_by_policy() {
-        var slot = slotWith(2, 2, 5); // at min
-        var underMin = slotWith(0, 3, 5);
-        var policy = SlotLockPolicy.from(List.of(slot, underMin));
-        assertThatThrownBy(() -> slot.register(COOP, policy, OPEN))
-                .isInstanceOf(SlotLockedException.class);
+    void register_refreshes_status_to_OPEN_when_min_reached() {
+        var slot = slotWith(1, 2, 5);
+        slot.register(COOP, OPEN);
+        assertThat(slot.status()).isEqualTo(SlotStatus.OPEN);
     }
 
     @Test
-    void register_allowed_when_this_slot_under_min_even_if_others_also_under() {
-        var slot = slotWith(0, 3, 5);
-        var other = slotWith(0, 3, 5);
-        var policy = SlotLockPolicy.from(List.of(slot, other));
-        slot.register(COOP, policy, OPEN);
-        assertThat(slot.registrationCount()).isEqualTo(1);
+    void register_refreshes_status_to_FULL_when_max_reached() {
+        var slot = slotWith(2, 1, 3);
+        slot.register(COOP, OPEN);
+        assertThat(slot.status()).isEqualTo(SlotStatus.FULL);
     }
 
     @Test
     void unregister_removes_cooperator() {
         var slot = slotWith(0, 1, 3);
-        slot.register(COOP, SlotLockPolicy.unlocked(), OPEN);
+        slot.register(COOP, OPEN);
         assertThat(slot.unregister(COOP.id())).isTrue();
         assertThat(slot.hasCooperator(COOP.id())).isFalse();
     }
 
     @Test
-    void admin_assign_bypasses_lock_and_campaign() {
+    void admin_assign_bypasses_campaign() {
         var slot = slotWith(2, 2, 5);
         slot.adminAssign(COOP);
         assertThat(slot.hasCooperator(COOP.id())).isTrue();

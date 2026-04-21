@@ -2,10 +2,9 @@ package fr.sqq.choixcreneaux.application.command;
 
 import fr.sqq.choixcreneaux.application.port.out.*;
 import fr.sqq.choixcreneaux.domain.exception.AlreadyRegisteredException;
+import fr.sqq.choixcreneaux.domain.exception.SlotLockedException;
 import fr.sqq.choixcreneaux.domain.model.Campaign;
 import fr.sqq.choixcreneaux.domain.model.EmailType;
-import fr.sqq.choixcreneaux.domain.model.Slot;
-import fr.sqq.choixcreneaux.domain.model.SlotLockPolicy;
 import fr.sqq.mediator.Command;
 import fr.sqq.mediator.CommandHandler;
 import io.quarkus.logging.Log;
@@ -56,14 +55,14 @@ public record ChooseSlotCommand(UUID slotTemplateId, String barcodeBase) impleme
                 throw new AlreadyRegisteredException();
             }
 
-            var allSlots = slotRepo.findAll();
-            var lockPolicy = SlotLockPolicy.from(allSlots);
-            Slot targetSlot = allSlots.stream()
-                    .filter(s -> s.id().equals(command.slotTemplateId()))
-                    .findFirst()
+            var targetSlot = slotRepo.findById(command.slotTemplateId())
                     .orElseThrow(() -> new RuntimeException("Slot not found"));
 
-            targetSlot.register(cooperator, lockPolicy, campaign);
+            if (slotRepo.anyUnderMinimum() && !targetSlot.isUnderMinimum()) {
+                throw new SlotLockedException();
+            }
+
+            targetSlot.register(cooperator, campaign);
             slotRepo.save(targetSlot);
 
             try {

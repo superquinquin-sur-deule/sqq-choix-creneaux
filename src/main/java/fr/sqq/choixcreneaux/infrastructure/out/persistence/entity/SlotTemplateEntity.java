@@ -16,5 +16,6 @@ public class SlotTemplateEntity extends PanacheEntityBase {
     @Column(name = "min_capacity", nullable = false) public int minCapacity;
     @Column(name = "max_capacity", nullable = false) public int maxCapacity;
     @Column(name = "odoo_template_id") public Long odooTemplateId;
+    @Column(nullable = false, length = 20) public String status;
     @Version public int version;
 }

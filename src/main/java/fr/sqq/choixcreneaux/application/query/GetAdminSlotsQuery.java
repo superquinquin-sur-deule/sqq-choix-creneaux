@@ -1,9 +1,10 @@
 package fr.sqq.choixcreneaux.application.query;
 
 import fr.sqq.choixcreneaux.application.port.out.CooperatorRepository;
-import fr.sqq.choixcreneaux.application.port.out.SlotRegistrationRepository;
-import fr.sqq.choixcreneaux.application.port.out.SlotTemplateRepository;
-import fr.sqq.choixcreneaux.domain.model.*;
+import fr.sqq.choixcreneaux.application.port.out.SlotRepository;
+import fr.sqq.choixcreneaux.domain.model.Cooperator;
+import fr.sqq.choixcreneaux.domain.model.SlotRegistration;
+import fr.sqq.choixcreneaux.domain.model.SlotStatus;
 import fr.sqq.mediator.Query;
 import fr.sqq.mediator.QueryHandler;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -17,50 +18,38 @@ public record GetAdminSlotsQuery() implements Query<List<AdminSlotView>> {
     @ApplicationScoped
     public static class Handler implements QueryHandler<GetAdminSlotsQuery, List<AdminSlotView>> {
 
-        private final SlotTemplateRepository slotRepo;
-        private final SlotRegistrationRepository registrationRepo;
+        private final SlotRepository slotRepo;
         private final CooperatorRepository cooperatorRepo;
 
         @Inject
-        public Handler(SlotTemplateRepository slotRepo,
-                       SlotRegistrationRepository registrationRepo,
-                       CooperatorRepository cooperatorRepo) {
+        public Handler(SlotRepository slotRepo, CooperatorRepository cooperatorRepo) {
             this.slotRepo = slotRepo;
-            this.registrationRepo = registrationRepo;
             this.cooperatorRepo = cooperatorRepo;
         }
 
         @Override
         public List<AdminSlotView> handle(GetAdminSlotsQuery query) {
             var slots = slotRepo.findAll();
-            var registrations = registrationRepo.findAll();
+            boolean anyUnderMin = slots.stream().anyMatch(s -> s.status() == SlotStatus.NEEDS_PEOPLE);
 
-            Map<UUID, List<SlotRegistration>> regsBySlot = registrations.stream()
-                    .collect(Collectors.groupingBy(SlotRegistration::slotTemplateId));
-
-            Set<UUID> cooperatorIds = registrations.stream()
-                    .map(SlotRegistration::cooperatorId).collect(Collectors.toSet());
+            Set<UUID> cooperatorIds = slots.stream()
+                    .flatMap(s -> s.registrations().stream())
+                    .map(SlotRegistration::cooperatorId)
+                    .collect(Collectors.toSet());
             Map<UUID, Cooperator> cooperatorsById = cooperatorRepo.findAllById(cooperatorIds).stream()
                     .collect(Collectors.toMap(Cooperator::id, c -> c));
 
-            boolean anyUnderMinimum = slots.stream().anyMatch(s -> {
-                int count = regsBySlot.getOrDefault(s.id(), List.of()).size();
-                return count < s.minCapacity();
-            });
-
             return slots.stream().map(slot -> {
-                var slotRegs = regsBySlot.getOrDefault(slot.id(), List.of());
-                int count = slotRegs.size();
-                var status = SlotStatusCalculator.compute(slot.minCapacity(), slot.maxCapacity(), count, anyUnderMinimum);
-                var registrants = slotRegs.stream()
-                        .map(r -> toSummary(r, cooperatorsById.get(r.cooperatorId())))
+                SlotStatus status = (anyUnderMin && slot.status() == SlotStatus.OPEN) ? SlotStatus.LOCKED : slot.status();
+                var registrants = slot.registrations().stream()
+                        .map(r -> toSummary(cooperatorsById.get(r.cooperatorId())))
                         .filter(Objects::nonNull)
                         .toList();
-                return new AdminSlotView(slot, count, status, registrants);
+                return new AdminSlotView(slot, status, registrants);
             }).toList();
         }
 
-        private RegistrantSummary toSummary(SlotRegistration registration, Cooperator cooperator) {
+        private RegistrantSummary toSummary(Cooperator cooperator) {
             if (cooperator == null) return null;
             return new RegistrantSummary(cooperator.id(), cooperator.firstName(), lastNameInitial(cooperator.lastName()));
         }

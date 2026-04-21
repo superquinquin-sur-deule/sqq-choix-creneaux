@@ -1,0 +1,3 @@
+ALTER TABLE slot_template
+    ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'NEEDS_PEOPLE',
+    ADD CONSTRAINT chk_slot_status CHECK (status IN ('NEEDS_PEOPLE', 'LOCKED', 'OPEN', 'FULL'));

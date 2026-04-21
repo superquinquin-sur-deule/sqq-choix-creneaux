@@ -29,7 +29,6 @@ class ChooseSlotCommandHandlerTest {
     private ChooseSlotCommand.Handler handler;
 
     private static final UUID SLOT_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
-    private static final UUID SLOT_ID_2 = UUID.fromString("00000000-0000-0000-0000-000000000002");
     private static final UUID COOP_ID = UUID.fromString("00000000-0000-0000-0000-000000000010");
     private static final String BARCODE_BASE = "12345";
     private static final Cooperator COOP = new Cooperator(COOP_ID, "test@example.com", "Jean", "Dupont", null, BARCODE_BASE);
@@ -40,16 +39,7 @@ class ChooseSlotCommandHandlerTest {
             regs.add(new SlotRegistration(UUID.randomUUID(), SLOT_ID, UUID.randomUUID(), Instant.now()));
         }
         return Slot.rehydrate(SLOT_ID, Week.A, DayOfWeek.MONDAY, LocalTime.of(15, 45), LocalTime.of(18, 30),
-                4, 5, null, 0, regs);
-    }
-
-    private Slot otherSlot(int registrations) {
-        List<SlotRegistration> regs = new ArrayList<>();
-        for (int i = 0; i < registrations; i++) {
-            regs.add(new SlotRegistration(UUID.randomUUID(), SLOT_ID_2, UUID.randomUUID(), Instant.now()));
-        }
-        return Slot.rehydrate(SLOT_ID_2, Week.A, DayOfWeek.TUESDAY, LocalTime.of(15, 45), LocalTime.of(18, 30),
-                4, 5, null, 0, regs);
+                4, 5, null, 0, regs, SlotStatus.NEEDS_PEOPLE);
     }
 
     @BeforeEach
@@ -76,7 +66,8 @@ class ChooseSlotCommandHandlerTest {
 
     @Test
     void rejects_when_slot_is_full() {
-        when(slotRepo.findAll()).thenReturn(List.of(slot(5), otherSlot(4)));
+        when(slotRepo.findById(SLOT_ID)).thenReturn(Optional.of(slot(5)));
+        when(slotRepo.anyUnderMinimum()).thenReturn(false);
         assertThatThrownBy(() -> handler.handle(new ChooseSlotCommand(SLOT_ID, BARCODE_BASE)))
                 .isInstanceOf(SlotFullException.class);
         verify(slotRepo, never()).save(any());
@@ -84,17 +75,18 @@ class ChooseSlotCommandHandlerTest {
 
     @Test
     void rejects_when_slot_is_locked() {
-        // target slot at min (4), other slot under min (2) → locked
-        when(slotRepo.findAll()).thenReturn(List.of(slot(4), otherSlot(2)));
+        // target slot at min (4), another slot under min → locked
+        when(slotRepo.findById(SLOT_ID)).thenReturn(Optional.of(slot(4)));
+        when(slotRepo.anyUnderMinimum()).thenReturn(true);
         assertThatThrownBy(() -> handler.handle(new ChooseSlotCommand(SLOT_ID, BARCODE_BASE)))
                 .isInstanceOf(SlotLockedException.class);
         verify(slotRepo, never()).save(any());
     }
 
     @Test
-    void succeeds_when_slot_needs_people() {
-        // both under min → not locked
-        when(slotRepo.findAll()).thenReturn(List.of(slot(2), otherSlot(2)));
+    void succeeds_when_target_slot_is_under_minimum_even_if_others_are() {
+        when(slotRepo.findById(SLOT_ID)).thenReturn(Optional.of(slot(2)));
+        when(slotRepo.anyUnderMinimum()).thenReturn(true);
         handler.handle(new ChooseSlotCommand(SLOT_ID, BARCODE_BASE));
         ArgumentCaptor<Slot> saved = ArgumentCaptor.forClass(Slot.class);
         verify(slotRepo).save(saved.capture());
@@ -106,7 +98,8 @@ class ChooseSlotCommandHandlerTest {
     void rejects_when_campaign_not_open() {
         var closedCampaign = new Campaign(CampaignStatus.CLOSED, LocalDate.of(2026, 5, 18), LocalDate.of(2015, 12, 28));
         handler = new ChooseSlotCommand.Handler(slotRepo, cooperatorRepo, registrationRepo, closedCampaign, emailSender, emailLogRepo);
-        when(slotRepo.findAll()).thenReturn(List.of(slot(2), otherSlot(2)));
+        when(slotRepo.findById(SLOT_ID)).thenReturn(Optional.of(slot(2)));
+        when(slotRepo.anyUnderMinimum()).thenReturn(false);
         assertThatThrownBy(() -> handler.handle(new ChooseSlotCommand(SLOT_ID, BARCODE_BASE)))
                 .isInstanceOf(CampaignNotOpenException.class);
     }

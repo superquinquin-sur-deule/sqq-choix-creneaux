@@ -1,7 +1,7 @@
 package fr.sqq.choixcreneaux.application.query;
 
-import fr.sqq.choixcreneaux.application.port.out.SlotTemplateRepository;
-import fr.sqq.choixcreneaux.domain.model.SlotStatusCalculator;
+import fr.sqq.choixcreneaux.application.port.out.SlotRepository;
+import fr.sqq.choixcreneaux.domain.model.SlotStatus;
 import fr.sqq.mediator.Query;
 import fr.sqq.mediator.QueryHandler;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -13,27 +13,20 @@ public record GetSlotsQuery() implements Query<List<SlotWithFillInfo>> {
 
     @ApplicationScoped
     public static class Handler implements QueryHandler<GetSlotsQuery, List<SlotWithFillInfo>> {
-        private final SlotTemplateRepository slotRepo;
+        private final SlotRepository slotRepo;
 
         @Inject
-        public Handler(SlotTemplateRepository slotRepo) {
+        public Handler(SlotRepository slotRepo) {
             this.slotRepo = slotRepo;
         }
 
         @Override
         public List<SlotWithFillInfo> handle(GetSlotsQuery query) {
             var slots = slotRepo.findAll();
-            var counts = slotRepo.countRegistrationsPerSlot();
-
-            boolean anyUnderMinimum = slots.stream().anyMatch(s -> {
-                int count = counts.getOrDefault(s.id(), 0);
-                return count < s.minCapacity();
-            });
-
+            boolean anyUnderMin = slots.stream().anyMatch(s -> s.status() == SlotStatus.NEEDS_PEOPLE);
             return slots.stream().map(slot -> {
-                int count = counts.getOrDefault(slot.id(), 0);
-                var status = SlotStatusCalculator.compute(slot.minCapacity(), slot.maxCapacity(), count, anyUnderMinimum);
-                return new SlotWithFillInfo(slot, count, status);
+                SlotStatus status = (anyUnderMin && slot.status() == SlotStatus.OPEN) ? SlotStatus.LOCKED : slot.status();
+                return new SlotWithFillInfo(slot, status);
             }).toList();
         }
     }
