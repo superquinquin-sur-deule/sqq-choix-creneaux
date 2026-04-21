@@ -6,6 +6,15 @@ export interface MeResponse {
   email: string
   firstName: string
   lastName: string
+  roles: string[]
+}
+
+export const ADMIN_ROLES = ['Member Manager', 'Foodcoop Admin'] as const
+export const SYNC_ROLES = ['Foodcoop Admin'] as const
+
+export function hasAnyRole(userRoles: string[] | undefined, required: readonly string[]): boolean {
+  if (!userRoles) return false
+  return required.some((r) => userRoles.includes(r))
 }
 
 export interface MyRegistrationResponse {

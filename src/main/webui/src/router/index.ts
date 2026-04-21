@@ -1,4 +1,17 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { customFetch } from '@/api/mutator/custom-fetch'
+import {
+  ADMIN_ROLES,
+  SYNC_ROLES,
+  hasAnyRole,
+  type MeResponse,
+} from '@/composables/useMe'
+
+declare module 'vue-router' {
+  interface RouteMeta {
+    roles?: readonly string[]
+  }
+}
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -28,13 +41,39 @@ const router = createRouter({
       path: '/admin',
       name: 'admin',
       component: () => import('@/views/admin/DashboardView.vue'),
+      meta: { roles: ADMIN_ROLES },
     },
     {
       path: '/admin/sync',
       name: 'admin-sync',
       component: () => import('@/views/admin/SyncView.vue'),
+      meta: { roles: SYNC_ROLES },
     },
   ],
+})
+
+let cachedMe: MeResponse | null = null
+
+async function fetchMe(): Promise<MeResponse | null> {
+  if (cachedMe) return cachedMe
+  try {
+    const r = await customFetch<{ data: MeResponse }>('/api/me', { method: 'GET' })
+    cachedMe = r.data
+    return cachedMe
+  } catch {
+    return null
+  }
+}
+
+router.beforeEach(async (to) => {
+  const required = to.meta.roles
+  if (!required || required.length === 0) return true
+  const me = await fetchMe()
+  if (!me) return true
+  if (!hasAnyRole(me.roles, required)) {
+    return { name: 'home' }
+  }
+  return true
 })
 
 router.onError((error, to) => {
