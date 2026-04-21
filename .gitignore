@@ -51,6 +51,7 @@ nb-configuration.xml
 CLAUDE.md
 
 src/main/resources/application-dev.properties
+src/main/resources/keycloak/realm-sqq.staging.json
 .superpowers
 docs/superpowers
 
