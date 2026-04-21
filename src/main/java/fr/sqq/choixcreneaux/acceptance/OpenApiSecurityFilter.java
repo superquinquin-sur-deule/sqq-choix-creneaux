@@ -10,7 +10,7 @@ import org.eclipse.microprofile.openapi.models.security.SecurityScheme;
 
 public class OpenApiSecurityFilter implements OASFilter {
 
-    private static final String SCHEME_NAME = "oidc";
+    private static final String SCHEME_NAME = "SecurityScheme";
 
     @Override
     public void filterOpenAPI(OpenAPI openAPI) {
