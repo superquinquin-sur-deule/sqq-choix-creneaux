@@ -1,9 +1,9 @@
-package fr.sqq.choixcreneaux.infrastructure.in.rest;
+package fr.sqq.choixcreneaux.acceptance;
 
 import fr.sqq.choixcreneaux.application.port.out.EmailLogRepository;
 import fr.sqq.choixcreneaux.application.port.out.EmailSender;
 import fr.sqq.choixcreneaux.domain.model.Week;
-import fr.sqq.choixcreneaux.infrastructure.in.rest.fixtures.TestFixtures;
+import fr.sqq.choixcreneaux.acceptance.fixtures.TestFixtures;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
@@ -20,8 +20,8 @@ import java.util.UUID;
 import static io.restassured.RestAssured.given;
 
 @QuarkusTest
-@TestProfile(SlotRegistrationCampaignClosedTest.CampaignClosedProfile.class)
-class SlotRegistrationCampaignClosedTest {
+@TestProfile(SlotRegistrationCampaignClosedAcceptanceTest.CampaignClosedProfile.class)
+class SlotRegistrationCampaignClosedAcceptanceTest {
 
     private static final String BARCODE = "12345";
 

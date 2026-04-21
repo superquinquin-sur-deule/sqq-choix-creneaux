@@ -1,4 +1,4 @@
-package fr.sqq.choixcreneaux.infrastructure.in.rest;
+package fr.sqq.choixcreneaux.acceptance;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.openapi.OASFilter;

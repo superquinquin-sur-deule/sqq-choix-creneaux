@@ -1,4 +1,4 @@
-package fr.sqq.choixcreneaux.infrastructure.in.rest;
+package fr.sqq.choixcreneaux.acceptance;
 
 import fr.sqq.choixcreneaux.application.command.SyncCooperatorsCommand;
 import fr.sqq.choixcreneaux.application.command.SyncPullCommand;

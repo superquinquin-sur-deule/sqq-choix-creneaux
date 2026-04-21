@@ -1,9 +1,9 @@
-package fr.sqq.choixcreneaux.infrastructure.in.rest;
+package fr.sqq.choixcreneaux.acceptance;
 
 import fr.sqq.choixcreneaux.application.port.out.EmailLogRepository;
 import fr.sqq.choixcreneaux.application.port.out.EmailSender;
 import fr.sqq.choixcreneaux.domain.model.Week;
-import fr.sqq.choixcreneaux.infrastructure.in.rest.fixtures.TestFixtures;
+import fr.sqq.choixcreneaux.acceptance.fixtures.TestFixtures;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
@@ -21,7 +21,7 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 
 @QuarkusTest
-class AdminSlotEndpointTest {
+class AdminSlotAcceptanceTest {
 
     private static final String ADMIN_ROLE = "Foodcoop Admin";
 
@@ -44,6 +44,13 @@ class AdminSlotEndpointTest {
                 .body("find { it.id == '%s' }.registrationCount".formatted(slotId), is(0))
                 .body("find { it.id == '%s' }.registrants".formatted(slotId), empty())
                 .body("find { it.id == '%s' }.status".formatted(slotId), is("NEEDS_PEOPLE"));
+    }
+
+    @Test
+    @TestSecurity(user = "admin", roles = "Some Unknown Role")
+    void userWithoutAdminRole_cannot_access_admin_endpoints() {
+        given().when().get("/api/admin/slots")
+                .then().statusCode(403);
     }
 
     @Test

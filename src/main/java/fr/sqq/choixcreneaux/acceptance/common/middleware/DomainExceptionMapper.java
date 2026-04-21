@@ -1,11 +1,11 @@
-package fr.sqq.choixcreneaux.infrastructure.in.rest.common.middleware;
+package fr.sqq.choixcreneaux.acceptance.common.middleware;
 
 import fr.sqq.choixcreneaux.domain.exception.AlreadyRegisteredException;
 import fr.sqq.choixcreneaux.domain.exception.CampaignNotOpenException;
 import fr.sqq.choixcreneaux.domain.exception.DomainException;
 import fr.sqq.choixcreneaux.domain.exception.SlotFullException;
 import fr.sqq.choixcreneaux.domain.exception.SlotLockedException;
-import fr.sqq.choixcreneaux.infrastructure.in.rest.common.dto.ProblemDetailResponse;
+import fr.sqq.choixcreneaux.acceptance.common.dto.ProblemDetailResponse;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.ExceptionMapper;

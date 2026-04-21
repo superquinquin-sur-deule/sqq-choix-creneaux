@@ -1,4 +1,4 @@
-package fr.sqq.choixcreneaux.infrastructure.in.rest.fixtures;
+package fr.sqq.choixcreneaux.acceptance.fixtures;
 
 import fr.sqq.choixcreneaux.application.port.out.CooperatorRepository;
 import fr.sqq.choixcreneaux.application.port.out.SlotRepository;

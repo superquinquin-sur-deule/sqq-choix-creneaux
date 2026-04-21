@@ -1,4 +1,4 @@
-package fr.sqq.choixcreneaux.infrastructure.in.rest;
+package fr.sqq.choixcreneaux.acceptance;
 
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;

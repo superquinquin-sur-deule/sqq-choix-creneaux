@@ -1,9 +1,9 @@
-package fr.sqq.choixcreneaux.infrastructure.in.rest;
+package fr.sqq.choixcreneaux.acceptance;
 
 import fr.sqq.choixcreneaux.application.port.out.EmailLogRepository;
 import fr.sqq.choixcreneaux.application.port.out.EmailSender;
 import fr.sqq.choixcreneaux.domain.model.Week;
-import fr.sqq.choixcreneaux.infrastructure.in.rest.fixtures.TestFixtures;
+import fr.sqq.choixcreneaux.acceptance.fixtures.TestFixtures;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
@@ -19,7 +19,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
 @QuarkusTest
-class SlotRegistrationEndpointTest {
+class SlotRegistrationAcceptanceTest {
 
     private static final String BARCODE = "12345";
 

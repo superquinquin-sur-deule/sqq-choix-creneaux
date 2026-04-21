@@ -1,4 +1,4 @@
-package fr.sqq.choixcreneaux.infrastructure.in.rest.common.dto;
+package fr.sqq.choixcreneaux.acceptance.common.dto;
 
 public record ProblemDetailResponse(
         String type,

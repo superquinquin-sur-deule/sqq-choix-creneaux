@@ -7,7 +7,7 @@ import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.assertions.PlaywrightAssertions;
 import fr.sqq.choixcreneaux.domain.model.Week;
-import fr.sqq.choixcreneaux.infrastructure.in.rest.fixtures.TestFixtures;
+import fr.sqq.choixcreneaux.acceptance.fixtures.TestFixtures;
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
 import io.cucumber.java.fr.Alors;

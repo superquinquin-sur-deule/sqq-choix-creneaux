@@ -1,4 +1,4 @@
-package fr.sqq.choixcreneaux.infrastructure.in.rest;
+package fr.sqq.choixcreneaux.acceptance;
 
 import fr.sqq.choixcreneaux.application.query.GetDashboardQuery;
 import fr.sqq.mediator.Mediator;

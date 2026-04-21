@@ -1,7 +1,7 @@
-package fr.sqq.choixcreneaux.infrastructure.in.rest;
+package fr.sqq.choixcreneaux.acceptance;
 
 import fr.sqq.choixcreneaux.domain.model.Week;
-import fr.sqq.choixcreneaux.infrastructure.in.rest.fixtures.TestFixtures;
+import fr.sqq.choixcreneaux.acceptance.fixtures.TestFixtures;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,7 +14,7 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.is;
 
 @QuarkusTest
-class SlotQueryEndpointTest {
+class SlotQueryAcceptanceTest {
 
     @Inject TestFixtures fixtures;
 
