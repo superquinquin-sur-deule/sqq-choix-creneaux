@@ -6,6 +6,7 @@
  */
 
 export * from './adminSlotResponse';
+export * from './appInfoResponse';
 export * from './assignRequest';
 export * from './assignResponse';
 export * from './campaignInfo';
@@ -14,11 +15,11 @@ export * from './dashboardResponse';
 export * from './dayOfWeek';
 export * from './getApiAdminCooperatorsParams';
 export * from './getApiAdminCooperatorsSearchParams';
-export * from './healthResponse';
 export * from './meResponse';
 export * from './pageResponse';
 export * from './pushResponse';
 export * from './registrantResponse';
+export * from './registrationResponse';
 export * from './reminderRequest';
 export * from './result';
 export * from './result1';

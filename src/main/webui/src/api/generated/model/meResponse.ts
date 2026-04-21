@@ -4,12 +4,11 @@
  * Choix Creneaux API
  * OpenAPI spec version: 1.0.0
  */
-import type { Uuid } from './uuid';
 
 export interface MeResponse {
-  cooperatorId: Uuid;
+  barcodeBase: string;
   email: string;
   firstName: string;
   lastName: string;
-  registeredSlotId: Uuid;
+  roles: string[];
 }

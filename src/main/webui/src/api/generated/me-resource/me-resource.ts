@@ -5,7 +5,8 @@
  * OpenAPI spec version: 1.0.0
  */
 import type {
-  MeResponse
+  MeResponse,
+  RegistrationResponse
 } from '../model';
 
 import { customFetch } from '../../mutator/custom-fetch';
@@ -36,6 +37,41 @@ export const getGetApiMeUrl = () => {
 export const getApiMe = async ( options?: RequestInit): Promise<getApiMeResponse> => {
 
   return customFetch<getApiMeResponse>(getGetApiMeUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+/**
+ * @summary Get Registration
+ */
+export type getApiMeRegistrationResponse200 = {
+  data: RegistrationResponse
+  status: 200
+}
+
+export type getApiMeRegistrationResponseSuccess = (getApiMeRegistrationResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiMeRegistrationResponse = (getApiMeRegistrationResponseSuccess)
+
+export const getGetApiMeRegistrationUrl = () => {
+
+
+
+
+  return `/api/me/registration`
+}
+
+export const getApiMeRegistration = async ( options?: RequestInit): Promise<getApiMeRegistrationResponse> => {
+
+  return customFetch<getApiMeRegistrationResponse>(getGetApiMeRegistrationUrl(),
   {
     ...options,
     method: 'GET'

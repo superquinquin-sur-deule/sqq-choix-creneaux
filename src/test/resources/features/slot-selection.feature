@@ -1,12 +1,10 @@
 # language: fr
-Fonctionnalité: Choix de créneau
+Fonctionnalité: Choix d'un créneau par un coopérateur
 
-  Scénario: Un coopérateur peut voir les créneaux disponibles
-    Quand j'appelle GET "/api/slots"
-    Alors je reçois un code HTTP 200
-    Et la réponse contient une liste de créneaux
-
-  Scénario: Un coopérateur ne peut pas s'inscrire deux fois
-    Étant donné que je suis déjà inscrit à un créneau
-    Quand j'appelle POST "/api/slots/test-slot-id/register"
-    Alors je reçois un code HTTP 409
+  Scénario: Happy path — un coopérateur choisit et confirme un créneau
+    Étant donné que des créneaux sont disponibles
+    Quand je me rends sur la page de choix de créneau
+    Et je sélectionne le créneau du mardi 10h00
+    Et je continue vers la confirmation
+    Et je confirme mon choix
+    Alors je vois la page "Créneau confirmé !"

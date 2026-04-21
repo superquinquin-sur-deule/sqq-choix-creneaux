@@ -21,7 +21,8 @@ public class OpenApiSecurityFilter implements OASFilter {
         OAuthFlow authCode = OASFactory.createOAuthFlow()
                 .authorizationUrl(authServerUrl + "/protocol/openid-connect/auth")
                 .tokenUrl(authServerUrl + "/protocol/openid-connect/token")
-                .refreshUrl(authServerUrl + "/protocol/openid-connect/token");
+                .refreshUrl(authServerUrl + "/protocol/openid-connect/token")
+                .scopes(java.util.Map.of("openid", "OpenID Connect"));
 
         OAuthFlows flows = OASFactory.createOAuthFlows().authorizationCode(authCode);
 
