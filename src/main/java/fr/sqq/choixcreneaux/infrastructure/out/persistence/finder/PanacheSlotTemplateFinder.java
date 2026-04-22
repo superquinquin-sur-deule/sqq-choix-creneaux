@@ -1,6 +1,6 @@
-package fr.sqq.choixcreneaux.infrastructure.out.persistence.repository;
+package fr.sqq.choixcreneaux.infrastructure.out.persistence.finder;
 
-import fr.sqq.choixcreneaux.application.port.out.SlotTemplateRepository;
+import fr.sqq.choixcreneaux.application.port.out.SlotTemplateFinder;
 import fr.sqq.choixcreneaux.domain.model.SlotTemplate;
 import fr.sqq.choixcreneaux.infrastructure.out.persistence.entity.SlotTemplateEntity;
 import fr.sqq.choixcreneaux.infrastructure.out.persistence.mapper.EntityMapper;
@@ -9,7 +9,7 @@ import jakarta.inject.Inject;
 import java.util.*;
 
 @ApplicationScoped
-public class PanacheSlotTemplateRepository implements SlotTemplateRepository {
+public class PanacheSlotTemplateFinder implements SlotTemplateFinder {
     @Inject EntityMapper mapper;
 
     @Override

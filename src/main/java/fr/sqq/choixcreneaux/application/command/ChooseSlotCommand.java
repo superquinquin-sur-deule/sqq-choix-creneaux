@@ -25,14 +25,14 @@ public record ChooseSlotCommand(UUID slotTemplateId, String barcodeBase) impleme
 
         private final SlotRepository slotRepo;
         private final CooperatorRepository cooperatorRepo;
-        private final SlotRegistrationRepository registrationRepo;
+        private final SlotRegistrationFinder registrationRepo;
         private final Campaign campaign;
         private final EmailSender emailSender;
         private final EmailLogRepository emailLogRepo;
 
         @Inject
         public Handler(SlotRepository slotRepo, CooperatorRepository cooperatorRepo,
-                       SlotRegistrationRepository registrationRepo, Campaign campaign,
+                       SlotRegistrationFinder registrationRepo, Campaign campaign,
                        EmailSender emailSender, EmailLogRepository emailLogRepo) {
             this.slotRepo = slotRepo;
             this.cooperatorRepo = cooperatorRepo;

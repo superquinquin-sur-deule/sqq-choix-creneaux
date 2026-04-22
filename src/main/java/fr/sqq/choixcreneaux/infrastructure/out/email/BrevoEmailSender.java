@@ -3,6 +3,7 @@ package fr.sqq.choixcreneaux.infrastructure.out.email;
 import fr.sqq.choixcreneaux.application.port.out.EmailSender;
 import fr.sqq.choixcreneaux.domain.model.Cooperator;
 import fr.sqq.choixcreneaux.domain.model.SlotTemplate;
+import io.quarkus.arc.profile.IfBuildProfile;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -15,7 +16,7 @@ import java.time.DayOfWeek;
 import java.util.Map;
 
 @ApplicationScoped
-@io.quarkus.arc.profile.IfBuildProfile("prod")
+@IfBuildProfile("prod")
 public class BrevoEmailSender implements EmailSender {
 
     private static final String BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";

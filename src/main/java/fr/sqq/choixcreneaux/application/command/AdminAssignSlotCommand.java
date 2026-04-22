@@ -25,13 +25,13 @@ public record AdminAssignSlotCommand(UUID slotTemplateId, UUID cooperatorId) imp
 
         private final SlotRepository slotRepo;
         private final CooperatorRepository cooperatorRepo;
-        private final SlotRegistrationRepository registrationRepo;
+        private final SlotRegistrationFinder registrationRepo;
         private final EmailSender emailSender;
         private final EmailLogRepository emailLogRepo;
 
         @Inject
         public Handler(SlotRepository slotRepo, CooperatorRepository cooperatorRepo,
-                       SlotRegistrationRepository registrationRepo,
+                       SlotRegistrationFinder registrationRepo,
                        EmailSender emailSender, EmailLogRepository emailLogRepo) {
             this.slotRepo = slotRepo;
             this.cooperatorRepo = cooperatorRepo;

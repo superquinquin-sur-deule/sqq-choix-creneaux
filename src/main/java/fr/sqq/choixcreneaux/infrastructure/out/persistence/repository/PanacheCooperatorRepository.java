@@ -4,6 +4,7 @@ import fr.sqq.choixcreneaux.application.port.out.CooperatorRepository;
 import fr.sqq.choixcreneaux.domain.model.Cooperator;
 import fr.sqq.choixcreneaux.infrastructure.out.persistence.entity.CooperatorEntity;
 import fr.sqq.choixcreneaux.infrastructure.out.persistence.mapper.EntityMapper;
+import io.quarkus.panache.common.Page;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;

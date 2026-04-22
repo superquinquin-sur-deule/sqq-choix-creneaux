@@ -1,4 +1,4 @@
-package fr.sqq.choixcreneaux.acceptance;
+package fr.sqq.choixcreneaux.infrastructure.in.rest;
 
 import fr.sqq.choixcreneaux.application.query.GetPendingCooperatorsPageQuery;
 import fr.sqq.choixcreneaux.application.query.GetPendingCooperatorsQuery;
@@ -57,11 +57,11 @@ public class AdminCooperatorResource {
     public String exportCsv() {
         List<Cooperator> cooperators = mediator.send(new GetPendingCooperatorsQuery());
         var sb = new StringBuilder("id,email,first_name,last_name\n");
-        for (Cooperator c : cooperators) {
-            sb.append(c.id()).append(',')
-              .append(c.email()).append(',')
-              .append(c.firstName()).append(',')
-              .append(c.lastName()).append('\n');
+        for (Cooperator cooperator : cooperators) {
+            sb.append(cooperator.id()).append(',')
+              .append(cooperator.email()).append(',')
+              .append(cooperator.firstName()).append(',')
+              .append(cooperator.lastName()).append('\n');
         }
         return sb.toString();
     }

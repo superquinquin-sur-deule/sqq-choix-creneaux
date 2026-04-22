@@ -1,7 +1,7 @@
 package fr.sqq.choixcreneaux.application.query;
 
 import fr.sqq.choixcreneaux.application.port.out.CooperatorRepository;
-import fr.sqq.choixcreneaux.application.port.out.SlotRegistrationRepository;
+import fr.sqq.choixcreneaux.application.port.out.SlotRegistrationFinder;
 import fr.sqq.mediator.Query;
 import fr.sqq.mediator.QueryHandler;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -15,10 +15,10 @@ public record GetMyRegistrationQuery(String barcodeBase) implements Query<GetMyR
     @ApplicationScoped
     public static class Handler implements QueryHandler<GetMyRegistrationQuery, Result> {
         private final CooperatorRepository cooperatorRepo;
-        private final SlotRegistrationRepository registrationRepo;
+        private final SlotRegistrationFinder registrationRepo;
 
         @Inject
-        public Handler(CooperatorRepository cooperatorRepo, SlotRegistrationRepository registrationRepo) {
+        public Handler(CooperatorRepository cooperatorRepo, SlotRegistrationFinder registrationRepo) {
             this.cooperatorRepo = cooperatorRepo;
             this.registrationRepo = registrationRepo;
         }

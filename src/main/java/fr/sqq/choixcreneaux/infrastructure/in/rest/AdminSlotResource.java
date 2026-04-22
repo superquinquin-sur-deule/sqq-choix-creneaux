@@ -1,4 +1,4 @@
-package fr.sqq.choixcreneaux.acceptance;
+package fr.sqq.choixcreneaux.infrastructure.in.rest;
 
 import fr.sqq.choixcreneaux.application.command.AdminAssignSlotCommand;
 import fr.sqq.choixcreneaux.application.query.AdminSlotView;

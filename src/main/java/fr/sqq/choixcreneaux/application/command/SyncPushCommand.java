@@ -11,13 +11,13 @@ public record SyncPushCommand() implements Command<Integer> {
 
     @ApplicationScoped
     public static class Handler implements CommandHandler<SyncPushCommand, Integer> {
-        private final SlotRegistrationRepository registrationRepo;
-        private final SlotTemplateRepository slotRepo;
+        private final SlotRegistrationFinder registrationRepo;
+        private final SlotTemplateFinder slotRepo;
         private final CooperatorRepository cooperatorRepo;
         private final OdooSyncPort odoo;
 
         @Inject
-        public Handler(SlotRegistrationRepository registrationRepo, SlotTemplateRepository slotRepo,
+        public Handler(SlotRegistrationFinder registrationRepo, SlotTemplateFinder slotRepo,
                        CooperatorRepository cooperatorRepo, OdooSyncPort odoo) {
             this.registrationRepo = registrationRepo;
             this.slotRepo = slotRepo;
