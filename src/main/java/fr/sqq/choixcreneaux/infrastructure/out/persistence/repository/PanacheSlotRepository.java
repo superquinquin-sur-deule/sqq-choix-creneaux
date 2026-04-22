@@ -47,18 +47,28 @@ public class PanacheSlotRepository implements SlotRepository {
 
     @Override
     public void save(Slot slot) {
-        SlotTemplateEntity entity = SlotTemplateEntity.findById(slot.id());
+        SlotTemplateEntity entity = null;
+        if (slot.odooTemplateId() != null) {
+            entity = SlotTemplateEntity.<SlotTemplateEntity>find("odooTemplateId", slot.odooTemplateId())
+                    .firstResult();
+        }
+        if (entity == null) {
+            entity = SlotTemplateEntity.findById(slot.id());
+        }
+        UUID entityId;
         if (entity == null) {
             entity = new SlotTemplateEntity();
             entity.id = slot.id();
             copyTemplateFields(slot, entity);
             entity.persist();
+            entityId = entity.id;
         } else {
             copyTemplateFields(slot, entity);
             em.lock(entity, LockModeType.OPTIMISTIC_FORCE_INCREMENT);
+            entityId = entity.id;
         }
 
-        reconcileRegistrations(slot);
+        reconcileRegistrations(entityId, slot);
     }
 
     @Override
@@ -77,8 +87,8 @@ public class PanacheSlotRepository implements SlotRepository {
         return n.longValue() > 0;
     }
 
-    private void reconcileRegistrations(Slot slot) {
-        List<SlotRegistrationEntity> existing = SlotRegistrationEntity.list("slotTemplateId", slot.id());
+    private void reconcileRegistrations(UUID entityId, Slot slot) {
+        List<SlotRegistrationEntity> existing = SlotRegistrationEntity.list("slotTemplateId", entityId);
         Set<UUID> aggCoops = new HashSet<>();
         for (SlotRegistration r : slot.registrations()) aggCoops.add(r.cooperatorId());
         Set<UUID> dbCoops = new HashSet<>();
@@ -91,7 +101,7 @@ public class PanacheSlotRepository implements SlotRepository {
             if (dbCoops.contains(r.cooperatorId())) continue;
             SlotRegistrationEntity e = new SlotRegistrationEntity();
             e.id = r.id();
-            e.slotTemplateId = r.slotTemplateId();
+            e.slotTemplateId = entityId;
             e.cooperatorId = r.cooperatorId();
             e.registeredAt = r.registeredAt();
             e.persist();
