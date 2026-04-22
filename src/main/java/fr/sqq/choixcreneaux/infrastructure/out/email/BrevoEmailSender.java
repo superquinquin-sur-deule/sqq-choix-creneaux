@@ -3,7 +3,6 @@ package fr.sqq.choixcreneaux.infrastructure.out.email;
 import fr.sqq.choixcreneaux.application.port.out.EmailSender;
 import fr.sqq.choixcreneaux.domain.model.Cooperator;
 import fr.sqq.choixcreneaux.domain.model.SlotTemplate;
-import io.quarkus.arc.profile.IfBuildProfile;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -16,7 +15,6 @@ import java.time.DayOfWeek;
 import java.util.Map;
 
 @ApplicationScoped
-@IfBuildProfile("prod")
 public class BrevoEmailSender implements EmailSender {
 
     private static final String BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
@@ -31,27 +29,35 @@ public class BrevoEmailSender implements EmailSender {
             DayOfWeek.SUNDAY, "Dimanche"
     );
 
+    @ConfigProperty(name = "brevo.enabled", defaultValue = "false")
+    boolean enabled;
+
     @ConfigProperty(name = "brevo.api-key", defaultValue = "")
     String apiKey;
 
     @ConfigProperty(name = "brevo.confirmation-template-id", defaultValue = "0")
     int confirmationTemplateId;
 
-    @ConfigProperty(name = "brevo.reminder-template-id", defaultValue = "0")
+    @ConfigProperty(name = "brevo.reminder-template-id", defaultValue = "56")
     int reminderTemplateId;
-
-    @ConfigProperty(name = "app.url", defaultValue = "http://localhost:8080")
-    String appUrl;
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
     @Override
     public void sendConfirmation(Cooperator cooperator, SlotTemplate slot, String weekLabel) {
-        if (apiKey == null || apiKey.isBlank()) {
-            Log.info("Brevo API key not configured, skipping confirmation email to " + cooperator.email());
+        String dayName = DAY_NAMES.getOrDefault(slot.dayOfWeek(), slot.dayOfWeek().name());
+        if (!enabled) {
+            Log.infof("""
+                    ╔══════════════════════════════════════════════════════════╗
+                    ║  📧 EMAIL CONFIRMATION (brevo disabled)                 ║
+                    ╠══════════════════════════════════════════════════════════╣
+                    ║  To:      %s (%s %s)
+                    ║  Créneau: Semaine %s — %s %s-%s
+                    ╚══════════════════════════════════════════════════════════╝""",
+                    cooperator.email(), cooperator.firstName(), cooperator.lastName(),
+                    weekLabel, dayName, slot.startTime(), slot.endTime());
             return;
         }
-        String dayName = DAY_NAMES.getOrDefault(slot.dayOfWeek(), slot.dayOfWeek().name());
         String params = """
                 {"firstName":"%s","lastName":"%s","weekLabel":"%s","dayName":"%s","startTime":"%s","endTime":"%s"}
                 """.formatted(
@@ -68,20 +74,25 @@ public class BrevoEmailSender implements EmailSender {
     }
 
     @Override
-    public void sendReminder(Cooperator cooperator, String appUrl) {
-        if (apiKey == null || apiKey.isBlank()) {
-            Log.info("Brevo API key not configured, skipping reminder email to " + cooperator.email());
+    public void sendReminder(Cooperator cooperator) {
+        if (!enabled) {
+            Log.infof("""
+                    ╔══════════════════════════════════════════════════════════╗
+                    ║  📧 EMAIL RELANCE (brevo disabled)                      ║
+                    ╠══════════════════════════════════════════════════════════╣
+                    ║  To: %s (%s %s)
+                    ╚══════════════════════════════════════════════════════════╝""",
+                    cooperator.email(), cooperator.firstName(), cooperator.lastName());
             return;
         }
-        String params = """
-                {"firstName":"%s","lastName":"%s","appUrl":"%s"}
+        String body = """
+                {"templateId":%d,"to":[{"email":"%s","name":"%s %s"}]}
                 """.formatted(
+                reminderTemplateId,
+                escape(cooperator.email()),
                 escape(cooperator.firstName()),
-                escape(cooperator.lastName()),
-                escape(appUrl)
+                escape(cooperator.lastName())
         ).trim();
-
-        String body = buildBody(reminderTemplateId, cooperator.email(), cooperator.firstName(), cooperator.lastName(), params);
         send(body, cooperator.email());
     }
 

@@ -10,7 +10,7 @@ import fr.sqq.mediator.CommandHandler;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
+import jakarta.transaction.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -18,20 +18,18 @@ import java.util.UUID;
 public record SendReminderCommand(List<UUID> cooperatorIds, boolean all) implements Command<Integer> {
 
     @ApplicationScoped
+    @Transactional
     public static class Handler implements CommandHandler<SendReminderCommand, Integer> {
         private final CooperatorRepository cooperatorRepo;
         private final EmailSender emailSender;
         private final EmailLogRepository emailLogRepo;
-        private final String appUrl;
 
         @Inject
         public Handler(CooperatorRepository cooperatorRepo, EmailSender emailSender,
-                       EmailLogRepository emailLogRepo,
-                       @ConfigProperty(name = "app.url", defaultValue = "http://localhost:8080") String appUrl) {
+                       EmailLogRepository emailLogRepo) {
             this.cooperatorRepo = cooperatorRepo;
             this.emailSender = emailSender;
             this.emailLogRepo = emailLogRepo;
-            this.appUrl = appUrl;
         }
 
         @Override
@@ -47,7 +45,7 @@ public record SendReminderCommand(List<UUID> cooperatorIds, boolean all) impleme
             int sent = 0;
             for (var coop : targets) {
                 try {
-                    emailSender.sendReminder(coop, appUrl);
+                    emailSender.sendReminder(coop);
                     emailLogRepo.log(coop.id(), EmailType.REMINDER);
                     sent++;
                 } catch (Exception e) {
