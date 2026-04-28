@@ -10,6 +10,7 @@ import {
 declare module 'vue-router' {
   interface RouteMeta {
     roles?: readonly string[]
+    requiresSynchronizedCooperator?: boolean
   }
 }
 
@@ -25,12 +26,14 @@ const router = createRouter({
       path: '/choisir',
       name: 'slot-selection',
       component: () => import('@/views/SlotSelectionView.vue'),
+      meta: { requiresSynchronizedCooperator: true },
     },
     {
       path: '/confirmer/:slotId',
       name: 'confirmation',
       component: () => import('@/views/ConfirmationView.vue'),
       props: true,
+      meta: { requiresSynchronizedCooperator: true },
     },
     {
       path: '/termine',
@@ -67,10 +70,14 @@ async function fetchMe(): Promise<MeResponse | null> {
 
 router.beforeEach(async (to) => {
   const required = to.meta.roles
-  if (!required || required.length === 0) return true
+  const requiresSync = to.meta.requiresSynchronizedCooperator === true
+  if ((!required || required.length === 0) && !requiresSync) return true
   const me = await fetchMe()
   if (!me) return true
-  if (!hasAnyRole(me.roles, required)) {
+  if (requiresSync && !me.cooperatorSynchronized) {
+    return { name: 'home' }
+  }
+  if (required && required.length > 0 && !hasAnyRole(me.roles, required)) {
     return { name: 'home' }
   }
   return true

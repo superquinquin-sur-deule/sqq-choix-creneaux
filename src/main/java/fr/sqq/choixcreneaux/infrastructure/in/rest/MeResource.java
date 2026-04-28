@@ -1,5 +1,6 @@
 package fr.sqq.choixcreneaux.infrastructure.in.rest;
 
+import fr.sqq.choixcreneaux.application.port.out.CooperatorRepository;
 import fr.sqq.choixcreneaux.application.query.GetMyRegistrationQuery;
 import fr.sqq.mediator.Mediator;
 import io.quarkus.oidc.IdToken;
@@ -28,14 +29,20 @@ public class MeResource {
     @Inject
     Mediator mediator;
 
+    @Inject
+    CooperatorRepository cooperatorRepo;
+
     @GET
     public MeResponse getMe() {
+        String barcodeBase = idToken.getClaim("preferred_username");
+        boolean cooperatorSynchronized = cooperatorRepo.findByBarcodeBase(barcodeBase).isPresent();
         return new MeResponse(
-                idToken.getClaim("preferred_username"),
+                barcodeBase,
                 idToken.getClaim("email"),
                 idToken.getClaim("given_name"),
                 idToken.getClaim("family_name"),
-                identity.getRoles()
+                identity.getRoles(),
+                cooperatorSynchronized
         );
     }
 
@@ -47,6 +54,6 @@ public class MeResource {
         return new RegistrationResponse(result.registeredSlotId());
     }
 
-    public record MeResponse(String barcodeBase, String email, String firstName, String lastName, Set<String> roles) {}
+    public record MeResponse(String barcodeBase, String email, String firstName, String lastName, Set<String> roles, boolean cooperatorSynchronized) {}
     public record RegistrationResponse(UUID registeredSlotId) {}
 }

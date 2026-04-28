@@ -7,6 +7,7 @@ export interface MeResponse {
   firstName: string
   lastName: string
   roles: string[]
+  cooperatorSynchronized: boolean
 }
 
 export const ADMIN_ROLES = ['Member Manager', 'Foodcoop Admin'] as const
