@@ -8,4 +8,5 @@
 export interface ReminderRequest {
   cooperatorIds: string[];
   all: boolean;
+  onlyNeverReminded: boolean;
 }

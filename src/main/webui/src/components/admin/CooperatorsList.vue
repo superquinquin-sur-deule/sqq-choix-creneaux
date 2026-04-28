@@ -18,6 +18,15 @@
         </a>
         <button
           type="button"
+          class="inline-flex items-center gap-1 rounded-lg border border-dark px-3 py-1.5 text-sm font-medium text-dark transition hover:bg-gray-50 disabled:opacity-50"
+          :disabled="isSending || total === 0"
+          @click="inviteNew"
+        >
+          <span v-if="isSending">Envoi…</span>
+          <span v-else>Inviter les nouveaux coops</span>
+        </button>
+        <button
+          type="button"
           class="inline-flex items-center gap-1 rounded-lg bg-dark px-3 py-1.5 text-sm font-medium text-white transition hover:bg-brown disabled:opacity-50"
           :disabled="isSending || total === 0"
           @click="remindAll"
@@ -47,6 +56,7 @@
             <tr class="border-b border-gray-200 bg-gray-50">
               <th class="px-4 py-3 text-left font-medium text-brown/70">Nom</th>
               <th class="px-4 py-3 text-left font-medium text-brown/70">Email</th>
+              <th class="px-4 py-3 text-left font-medium text-brown/70">Dernière relance</th>
               <th class="px-4 py-3 text-right font-medium text-brown/70">Action</th>
             </tr>
           </thead>
@@ -54,6 +64,10 @@
             <tr v-for="coop in items" :key="coop.id" class="bg-white hover:bg-gray-50">
               <td class="px-4 py-3 font-medium text-dark">{{ coop.firstName }} {{ coop.lastName }}</td>
               <td class="px-4 py-3 text-brown/70">{{ coop.email }}</td>
+              <td class="px-4 py-3 text-brown/70">
+                <span v-if="coop.lastReminderAt">{{ formatDate(coop.lastReminderAt) }}</span>
+                <span v-else class="text-brown/40">Jamais</span>
+              </td>
               <td class="px-4 py-3 text-right">
                 <button
                   type="button"
@@ -120,11 +134,29 @@ watch(pageCount, (count) => {
 const { mutateAsync, isPending: isSending } = useSendReminders()
 const successMessage = ref<string | null>(null)
 
+const dateFormatter = new Intl.DateTimeFormat('fr-FR', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+})
+
+function formatDate(iso: string) {
+  return dateFormatter.format(new Date(iso))
+}
+
 async function remindAll() {
   const result = await mutateAsync({ all: true })
   successMessage.value = result.scheduled
     ? 'Envoi des rappels lancé en arrière-plan.'
     : `${result.sentCount} rappel${result.sentCount > 1 ? 's' : ''} envoyé${result.sentCount > 1 ? 's' : ''}.`
+  setTimeout(() => { successMessage.value = null }, 5000)
+}
+
+async function inviteNew() {
+  const result = await mutateAsync({ all: true, onlyNeverReminded: true })
+  successMessage.value = result.scheduled
+    ? 'Envoi aux nouveaux coopérateur·ices lancé en arrière-plan.'
+    : `${result.sentCount} invitation${result.sentCount > 1 ? 's' : ''} envoyée${result.sentCount > 1 ? 's' : ''}.`
   setTimeout(() => { successMessage.value = null }, 5000)
 }
 

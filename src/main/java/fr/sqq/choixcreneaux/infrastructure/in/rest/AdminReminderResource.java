@@ -30,14 +30,14 @@ public class AdminReminderResource {
     @Consumes(MediaType.APPLICATION_JSON)
     public Response sendReminders(ReminderRequest request) {
         if (request.all()) {
-            bulkJob.schedule();
+            bulkJob.schedule(request.onlyNeverReminded());
             return Response.accepted(new ReminderResponse(0, true)).build();
         }
         int sentCount = mediator.send(new SendReminderCommand(request.cooperatorIds(), false));
         return Response.ok(new ReminderResponse(sentCount, false)).build();
     }
 
-    public record ReminderRequest(List<UUID> cooperatorIds, boolean all) {}
+    public record ReminderRequest(List<UUID> cooperatorIds, boolean all, boolean onlyNeverReminded) {}
 
     public record ReminderResponse(int sentCount, boolean scheduled) {}
 }

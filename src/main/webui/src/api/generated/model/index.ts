@@ -15,6 +15,7 @@ export * from './dashboardResponse';
 export * from './dayOfWeek';
 export * from './getApiAdminCooperatorsParams';
 export * from './getApiAdminCooperatorsSearchParams';
+export * from './instant';
 export * from './meResponse';
 export * from './pageResponse';
 export * from './pushResponse';

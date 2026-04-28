@@ -26,10 +26,18 @@ public class ReminderBulkJob {
 
     /** Schedule the bulk reminder on a virtual thread; returns immediately. */
     public void schedule() {
+        schedule(false);
+    }
+
+    /**
+     * Schedule the bulk reminder, optionally restricted to cooperators who have
+     * never received a reminder before.
+     */
+    public void schedule(boolean onlyNeverReminded) {
         // Resolve via CDI so the virtual thread invokes execute() through the
         // proxy — otherwise @ActivateRequestContext would be bypassed.
         ReminderBulkJob self = CDI.current().select(ReminderBulkJob.class).get();
-        Thread.ofVirtual().name("reminder-bulk-").start(self::execute);
+        Thread.ofVirtual().name("reminder-bulk-").start(() -> self.execute(onlyNeverReminded));
     }
 
     /**
@@ -37,10 +45,10 @@ public class ReminderBulkJob {
      * starts a fresh request scope (Hibernate session) for the thread.
      */
     @ActivateRequestContext
-    public void execute() {
+    public void execute(boolean onlyNeverReminded) {
         try {
-            int sent = mediator.send(new SendReminderCommand(null, true));
-            Log.infof("Bulk reminder job finished: %d reminder(s) sent", sent);
+            int sent = mediator.send(new SendReminderCommand(null, true, onlyNeverReminded));
+            Log.infof("Bulk reminder job finished: %d reminder(s) sent (onlyNeverReminded=%s)", sent, onlyNeverReminded);
         } catch (Exception e) {
             Log.errorf(e, "Bulk reminder job failed");
         }

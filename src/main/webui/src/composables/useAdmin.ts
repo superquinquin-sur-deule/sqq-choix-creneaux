@@ -17,6 +17,7 @@ export interface CooperatorResponse {
   email: string
   firstName: string
   lastName: string
+  lastReminderAt: string | null
 }
 
 export interface RegistrantResponse {
@@ -131,7 +132,7 @@ export function useSyncSlots() {
 export function useSendReminders() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (payload: { cooperatorIds?: string[]; all?: boolean }) =>
+    mutationFn: (payload: { cooperatorIds?: string[]; all?: boolean; onlyNeverReminded?: boolean }) =>
       customFetch<{ data: { sentCount: number; scheduled: boolean } }>('/api/admin/reminders', {
         method: 'POST',
         body: JSON.stringify(payload),

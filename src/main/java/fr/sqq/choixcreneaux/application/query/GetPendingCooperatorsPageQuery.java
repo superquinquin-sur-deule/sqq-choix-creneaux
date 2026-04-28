@@ -1,6 +1,9 @@
 package fr.sqq.choixcreneaux.application.query;
 
 import fr.sqq.choixcreneaux.application.port.out.CooperatorRepository;
+import fr.sqq.choixcreneaux.application.port.out.EmailLogRepository;
+import fr.sqq.choixcreneaux.domain.model.Cooperator;
+import fr.sqq.choixcreneaux.domain.model.EmailType;
 import fr.sqq.mediator.Query;
 import fr.sqq.mediator.QueryHandler;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -11,10 +14,12 @@ public record GetPendingCooperatorsPageQuery(int page, int size) implements Quer
     @ApplicationScoped
     public static class Handler implements QueryHandler<GetPendingCooperatorsPageQuery, PendingCooperatorsPage> {
         private final CooperatorRepository cooperatorRepo;
+        private final EmailLogRepository emailLogRepo;
 
         @Inject
-        public Handler(CooperatorRepository cooperatorRepo) {
+        public Handler(CooperatorRepository cooperatorRepo, EmailLogRepository emailLogRepo) {
             this.cooperatorRepo = cooperatorRepo;
+            this.emailLogRepo = emailLogRepo;
         }
 
         @Override
@@ -24,7 +29,9 @@ public record GetPendingCooperatorsPageQuery(int page, int size) implements Quer
             int offset = (page - 1) * size;
             long total = cooperatorRepo.countWithoutRegistration();
             var items = cooperatorRepo.findWithoutRegistration(offset, size);
-            return new PendingCooperatorsPage(items, total);
+            var ids = items.stream().map(Cooperator::id).toList();
+            var lastReminder = emailLogRepo.findLastSentByCooperators(ids, EmailType.REMINDER);
+            return new PendingCooperatorsPage(items, total, lastReminder);
         }
     }
 }

@@ -11,4 +11,5 @@ export interface MeResponse {
   firstName: string;
   lastName: string;
   roles: string[];
+  cooperatorSynchronized: boolean;
 }
