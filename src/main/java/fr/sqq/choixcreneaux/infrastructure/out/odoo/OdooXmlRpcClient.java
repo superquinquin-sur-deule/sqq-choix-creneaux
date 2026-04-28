@@ -149,6 +149,12 @@ public class OdooXmlRpcClient implements OdooSyncPort {
     public List<Cooperator> pullCooperators() {
         try {
             int uid = authenticate();
+
+            // Binômes are duplicated as child "contact" entries (type='contact', parent_id != false)
+            // on the main coop's partner record, with the binôme's name. We collect those names
+            // to exclude the binômes' own top-level partner records below.
+            Set<String> binomeNames = pullBinomeNames(uid);
+
             Map<String, Object> kwargs = new HashMap<>();
             kwargs.put("fields", new Object[]{"id", "email", "name", "barcode_base"});
             Object[] domain = new Object[]{
@@ -162,6 +168,10 @@ public class OdooXmlRpcClient implements OdooSyncPort {
             for (Object item : result) {
                 @SuppressWarnings("unchecked")
                 Map<String, Object> record = (Map<String, Object>) item;
+                String name = record.get("name") instanceof String s ? s.trim() : "";
+                if (matchesBinome(name, binomeNames)) {
+                    continue;
+                }
                 try {
                     cooperators.add(mapCooperator(record));
                 } catch (Exception e) {
@@ -173,6 +183,68 @@ public class OdooXmlRpcClient implements OdooSyncPort {
             Log.errorf("Failed to pull cooperators from Odoo: %s", e.getMessage());
             return Collections.emptyList();
         }
+    }
+
+    // Tolerates light typos (case, accents, small edits) between the binôme child contact
+    // name and the binôme partner's own name. Threshold scales with the shorter string.
+    private static boolean matchesBinome(String name, Set<String> binomeNames) {
+        if (name == null || name.isBlank()) return false;
+        String n = normalize(name);
+        for (String b : binomeNames) {
+            String bn = normalize(b);
+            int threshold = Math.min(3, Math.max(1, Math.min(n.length(), bn.length()) / 5));
+            if (levenshtein(n, bn, threshold) <= threshold) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static String normalize(String s) {
+        String stripped = java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
+        return stripped.toLowerCase().replaceAll("\\s+", " ").trim();
+    }
+
+    private static int levenshtein(String a, String b, int threshold) {
+        int la = a.length();
+        int lb = b.length();
+        if (Math.abs(la - lb) > threshold) return threshold + 1;
+        int[] prev = new int[lb + 1];
+        int[] curr = new int[lb + 1];
+        for (int j = 0; j <= lb; j++) prev[j] = j;
+        for (int i = 1; i <= la; i++) {
+            curr[0] = i;
+            int rowMin = curr[0];
+            for (int j = 1; j <= lb; j++) {
+                int cost = a.charAt(i - 1) == b.charAt(j - 1) ? 0 : 1;
+                curr[j] = Math.min(Math.min(curr[j - 1] + 1, prev[j] + 1), prev[j - 1] + cost);
+                if (curr[j] < rowMin) rowMin = curr[j];
+            }
+            if (rowMin > threshold) return threshold + 1;
+            int[] tmp = prev; prev = curr; curr = tmp;
+        }
+        return prev[lb];
+    }
+
+    private Set<String> pullBinomeNames(int uid) throws Exception {
+        Map<String, Object> kwargs = new HashMap<>();
+        kwargs.put("fields", new Object[]{"name"});
+        Object[] domain = new Object[]{
+                new Object[]{"parent_id", "!=", false},
+                new Object[]{"type", "=", "contact"}
+        };
+        Object[] result = (Object[]) execute(uid, "res.partner", "search_read",
+                new Object[]{domain}, kwargs);
+        Set<String> names = new HashSet<>();
+        for (Object item : result) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> record = (Map<String, Object>) item;
+            if (record.get("name") instanceof String s) {
+                names.add(s.trim());
+            }
+        }
+        return names;
     }
 
     private Cooperator mapCooperator(Map<String, Object> record) {

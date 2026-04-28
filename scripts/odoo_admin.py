@@ -9,6 +9,7 @@ import argparse
 import csv
 import os
 import sys
+import unicodedata
 from urllib.parse import urlparse
 
 import odoorpc
@@ -26,7 +27,14 @@ SLOT_FIELDS = [
 SLOT_DOMAIN = [("active", "=", True)]
 
 COOPERATOR_FIELDS = ["id", "email", "name", "working_state"]
-COOPERATOR_DOMAIN = [("working_state", "!=", "blocked")]
+COOPERATOR_DOMAIN = [
+    ("is_member", "=", True),
+    ("user_ids", "!=", False)
+]
+# Binômes are duplicated as child "contact" entries on the main coop's partner
+# record, with the binôme's name. We collect those names to filter out the
+# binômes' own top-level partner records.
+BINOME_DOMAIN = [("parent_id", "!=", False), ("type", "=", "contact")]
 
 CSV_REQUIRED_COLUMNS = ("week_list", "start_datetime", "end_datetime")
 CSV_OPTIONAL_INT_COLUMNS = ("worker_nb_min", "worker_nb_max")
@@ -81,16 +89,82 @@ def pull_slot_templates(odoo):
     return records
 
 
+def _normalize_name(s):
+    if not s:
+        return ""
+    nfd = unicodedata.normalize("NFD", s)
+    no_accent = "".join(c for c in nfd if unicodedata.category(c) != "Mn")
+    return " ".join(no_accent.lower().split())
+
+
+def _levenshtein(a, b, threshold):
+    la, lb = len(a), len(b)
+    if abs(la - lb) > threshold:
+        return threshold + 1
+    prev = list(range(lb + 1))
+    for i in range(1, la + 1):
+        curr = [i] + [0] * lb
+        row_min = curr[0]
+        for j in range(1, lb + 1):
+            cost = 0 if a[i - 1] == b[j - 1] else 1
+            curr[j] = min(curr[j - 1] + 1, prev[j] + 1, prev[j - 1] + cost)
+            if curr[j] < row_min:
+                row_min = curr[j]
+        if row_min > threshold:
+            return threshold + 1
+        prev = curr
+    return prev[lb]
+
+
+def _matches_binome(name, normalized_binomes):
+    n = _normalize_name(name)
+    if not n:
+        return False
+    for bn in normalized_binomes:
+        threshold = min(3, max(1, min(len(n), len(bn)) // 5))
+        if _levenshtein(n, bn, threshold) <= threshold:
+            return True
+    return False
+
+
 def pull_cooperators(odoo):
+    binome_ids = odoo.env["res.partner"].search(BINOME_DOMAIN)
+    normalized_binomes = {
+        _normalize_name(r.get("name") or "")
+        for r in odoo.env["res.partner"].read(binome_ids, ["name"])
+    }
+    normalized_binomes.discard("")
+
     ids = odoo.env["res.partner"].search(COOPERATOR_DOMAIN)
-    records = odoo.env["res.partner"].read(ids, COOPERATOR_FIELDS)
-    print(f"\nPulled {len(records)} cooperators (res.partner)")
+    all_records = odoo.env["res.partner"].read(ids, COOPERATOR_FIELDS)
+    records = [r for r in all_records if not _matches_binome(r.get("name") or "", normalized_binomes)]
+    skipped = len(all_records) - len(records)
+    print(f"\nPulled {len(records)} cooperators (res.partner), skipped {skipped} binôme(s)")
     for r in records:
         print(
             f"  id={r['id']} name={r.get('name')!r} "
             f"email={r.get('email')!r} working_state={r.get('working_state')!r}"
         )
     return records
+
+
+def _resolve_csv_paths(csv_arg, target):
+    if target == "slots":
+        return {"slots": csv_arg}
+    if target == "cooperators":
+        return {"cooperators": csv_arg}
+    base, ext = os.path.splitext(csv_arg)
+    ext = ext or ".csv"
+    return {"slots": f"{base}-slots{ext}", "cooperators": f"{base}-cooperators{ext}"}
+
+
+def export_records_to_csv(records, fields, path):
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
+        writer.writeheader()
+        for r in records:
+            writer.writerow({k: ("" if r.get(k) is None else r.get(k)) for k in fields})
+    print(f"Exported {len(records)} record(s) to {path}")
 
 
 def _row_to_values(row):
@@ -182,6 +256,12 @@ def parse_args(argv=None):
         choices=["slots", "cooperators", "all"],
         help="what to fetch (default: all)",
     )
+    p_pull.add_argument(
+        "--csv",
+        metavar="PATH",
+        help="also export pulled records to CSV file(s). With target=all, "
+             "writes PATH-slots.csv and PATH-cooperators.csv",
+    )
 
     p_create = sub.add_parser(
         "create-slots", help="create shift.template rows from a CSV"
@@ -206,15 +286,20 @@ def main(argv=None):
         return 1
 
     if args.cmd == "pull":
+        csv_paths = _resolve_csv_paths(args.csv, args.target) if args.csv else {}
         if args.target in ("slots", "all"):
             try:
-                pull_slot_templates(odoo)
+                slots = pull_slot_templates(odoo)
+                if "slots" in csv_paths:
+                    export_records_to_csv(slots, SLOT_FIELDS, csv_paths["slots"])
             except Exception as e:
                 print(f"ERROR: failed to pull shift.template: {e}", file=sys.stderr)
                 return 1
         if args.target in ("cooperators", "all"):
             try:
-                pull_cooperators(odoo)
+                cooperators = pull_cooperators(odoo)
+                if "cooperators" in csv_paths:
+                    export_records_to_csv(cooperators, COOPERATOR_FIELDS, csv_paths["cooperators"])
             except Exception as e:
                 print(f"ERROR: failed to pull res.partner: {e}", file=sys.stderr)
                 return 1
