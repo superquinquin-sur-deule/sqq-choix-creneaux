@@ -12,6 +12,11 @@
   "rememberMe": true,
   "loginWithEmailAllowed": true,
   "duplicateEmailsAllowed": false,
+  "ssoSessionIdleTimeout": 2592000,
+  "ssoSessionMaxLifespan": 2592000,
+  "ssoSessionIdleTimeoutRememberMe": 2592000,
+  "ssoSessionMaxLifespanRememberMe": 2592000,
+  "accessTokenLifespan": 900,
   "clients": [
     {
       "clientId": "test-app",
