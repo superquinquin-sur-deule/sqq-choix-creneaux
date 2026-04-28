@@ -27,6 +27,7 @@ public record SyncPushCommand() implements Command<Integer> {
 
         @Override
         public Integer handle(SyncPushCommand command) {
+            Log.info("SyncPushCommand: pushing registrations to Odoo");
             var registrations = registrationRepo.findAll();
             int pushed = 0;
             for (var reg : registrations) {

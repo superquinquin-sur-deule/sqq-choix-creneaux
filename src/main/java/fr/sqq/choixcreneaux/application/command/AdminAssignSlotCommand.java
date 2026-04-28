@@ -45,6 +45,8 @@ public record AdminAssignSlotCommand(UUID slotTemplateId, UUID cooperatorId) imp
                 retryOn = {OptimisticLockException.class, StaleStateException.class})
         @Transactional
         public Result handle(AdminAssignSlotCommand command) {
+            Log.infof("AdminAssignSlotCommand: cooperator=%s slotTemplate=%s",
+                    command.cooperatorId(), command.slotTemplateId());
             var cooperator = cooperatorRepo.findById(command.cooperatorId())
                     .orElseThrow(() -> new RuntimeException("Cooperator not found"));
 

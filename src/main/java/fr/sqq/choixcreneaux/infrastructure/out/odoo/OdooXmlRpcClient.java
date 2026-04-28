@@ -169,7 +169,7 @@ public class OdooXmlRpcClient implements OdooSyncPort {
                 @SuppressWarnings("unchecked")
                 Map<String, Object> record = (Map<String, Object>) item;
                 String name = record.get("name") instanceof String s ? s.trim() : "";
-                if (matchesBinome(name, binomeNames)) {
+                if (!name.isBlank() && binomeNames.contains(normalize(name))) {
                     continue;
                 }
                 try {
@@ -185,46 +185,10 @@ public class OdooXmlRpcClient implements OdooSyncPort {
         }
     }
 
-    // Tolerates light typos (case, accents, small edits) between the binôme child contact
-    // name and the binôme partner's own name. Threshold scales with the shorter string.
-    private static boolean matchesBinome(String name, Set<String> binomeNames) {
-        if (name == null || name.isBlank()) return false;
-        String n = normalize(name);
-        for (String b : binomeNames) {
-            String bn = normalize(b);
-            int threshold = Math.min(3, Math.max(1, Math.min(n.length(), bn.length()) / 5));
-            if (levenshtein(n, bn, threshold) <= threshold) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     private static String normalize(String s) {
         String stripped = java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD)
                 .replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
         return stripped.toLowerCase().replaceAll("\\s+", " ").trim();
-    }
-
-    private static int levenshtein(String a, String b, int threshold) {
-        int la = a.length();
-        int lb = b.length();
-        if (Math.abs(la - lb) > threshold) return threshold + 1;
-        int[] prev = new int[lb + 1];
-        int[] curr = new int[lb + 1];
-        for (int j = 0; j <= lb; j++) prev[j] = j;
-        for (int i = 1; i <= la; i++) {
-            curr[0] = i;
-            int rowMin = curr[0];
-            for (int j = 1; j <= lb; j++) {
-                int cost = a.charAt(i - 1) == b.charAt(j - 1) ? 0 : 1;
-                curr[j] = Math.min(Math.min(curr[j - 1] + 1, prev[j] + 1), prev[j - 1] + cost);
-                if (curr[j] < rowMin) rowMin = curr[j];
-            }
-            if (rowMin > threshold) return threshold + 1;
-            int[] tmp = prev; prev = curr; curr = tmp;
-        }
-        return prev[lb];
     }
 
     private Set<String> pullBinomeNames(int uid) throws Exception {
@@ -240,8 +204,8 @@ public class OdooXmlRpcClient implements OdooSyncPort {
         for (Object item : result) {
             @SuppressWarnings("unchecked")
             Map<String, Object> record = (Map<String, Object>) item;
-            if (record.get("name") instanceof String s) {
-                names.add(s.trim());
+            if (record.get("name") instanceof String s && !s.isBlank()) {
+                names.add(normalize(s));
             }
         }
         return names;

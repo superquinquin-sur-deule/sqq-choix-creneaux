@@ -47,6 +47,8 @@ public record ChooseSlotCommand(UUID slotTemplateId, String barcodeBase) impleme
                 retryOn = {OptimisticLockException.class, StaleStateException.class})
         @Transactional
         public Void handle(ChooseSlotCommand command) {
+            Log.infof("ChooseSlotCommand: barcodeBase=%s slotTemplate=%s",
+                    command.barcodeBase(), command.slotTemplateId());
             var cooperator = cooperatorRepo.findByBarcodeBase(command.barcodeBase())
                     .orElseThrow(() -> new RuntimeException(
                             "Cooperator with barcode base %s not found".formatted(command.barcodeBase())));

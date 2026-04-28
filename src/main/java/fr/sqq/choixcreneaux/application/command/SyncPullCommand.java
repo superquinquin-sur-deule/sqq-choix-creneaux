@@ -7,6 +7,7 @@ import fr.sqq.choixcreneaux.domain.model.Slot;
 import fr.sqq.choixcreneaux.domain.model.SlotTemplate;
 import fr.sqq.mediator.Command;
 import fr.sqq.mediator.CommandHandler;
+import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -32,6 +33,7 @@ public record SyncPullCommand() implements Command<SyncPullCommand.Result> {
         @Override
         @Transactional
         public Result handle(SyncPullCommand command) {
+            Log.info("SyncPullCommand: pulling slot templates and cooperators from Odoo");
             var templates = odoo.pullSlotTemplates();
             List<Slot> slots = templates.stream().map(this::toAggregate).toList();
             slotRepo.saveAll(slots);
