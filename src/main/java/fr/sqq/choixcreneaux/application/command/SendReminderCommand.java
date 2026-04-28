@@ -35,7 +35,8 @@ public record SendReminderCommand(List<UUID> cooperatorIds, boolean all) impleme
         @Override
         public Integer handle(SendReminderCommand command) {
             Log.infof("SendReminderCommand: all=%s cooperatorIds=%s",
-                    command.all(), command.cooperatorIds().size());
+                    command.all(),
+                    command.cooperatorIds() == null ? 0 : command.cooperatorIds().size());
             List<Cooperator> targets;
             if (command.all()) {
                 targets = cooperatorRepo.findWithoutRegistration();
