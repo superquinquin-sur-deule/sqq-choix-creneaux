@@ -46,27 +46,28 @@ public class BrevoEmailSender implements EmailSender {
     @Override
     public void sendConfirmation(Cooperator cooperator, SlotTemplate slot, String weekLabel) {
         String dayName = DAY_NAMES.getOrDefault(slot.dayOfWeek(), slot.dayOfWeek().name());
+        String week = "Semaine " + weekLabel;
+        String creneau = "%s %s-%s".formatted(dayName, slot.startTime(), slot.endTime());
+
         if (!enabled) {
             Log.infof("""
                     ╔══════════════════════════════════════════════════════════╗
                     ║  📧 EMAIL CONFIRMATION (brevo disabled)                 ║
                     ╠══════════════════════════════════════════════════════════╣
                     ║  To:      %s (%s %s)
-                    ║  Créneau: Semaine %s — %s %s-%s
+                    ║  Créneau: %s — %s
                     ╚══════════════════════════════════════════════════════════╝""",
                     cooperator.email(), cooperator.firstName(), cooperator.lastName(),
-                    weekLabel, dayName, slot.startTime(), slot.endTime());
+                    week, creneau);
             return;
         }
+
         String params = """
-                {"firstName":"%s","lastName":"%s","weekLabel":"%s","dayName":"%s","startTime":"%s","endTime":"%s"}
+                {"firstname":"%s","week":"%s","creneau":"%s"}
                 """.formatted(
                 escape(cooperator.firstName()),
-                escape(cooperator.lastName()),
-                escape(weekLabel),
-                dayName,
-                slot.startTime().toString(),
-                slot.endTime().toString()
+                escape(week),
+                escape(creneau)
         ).trim();
 
         String body = buildBody(confirmationTemplateId, cooperator.email(), cooperator.firstName(), cooperator.lastName(), params);

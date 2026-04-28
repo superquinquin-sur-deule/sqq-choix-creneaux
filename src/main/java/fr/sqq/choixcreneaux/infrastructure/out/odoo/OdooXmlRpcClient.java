@@ -255,9 +255,9 @@ public class OdooXmlRpcClient implements OdooSyncPort {
             throw new IllegalStateException("Cooperator " + odooId + " has no barcode_base");
         }
         String barcodeBase = String.valueOf(barcodeNumber.longValue());
-        String[] nameParts = fullName.trim().split(" ", 2);
-        String firstName = nameParts[0];
-        String lastName = nameParts.length > 1 ? nameParts[1] : "";
+        String[] nameParts = fullName.trim().split(",", 2);
+        String lastName = nameParts[0].trim();
+        String firstName = nameParts.length > 1 ? nameParts[1].trim() : "";
 
         return new Cooperator(UUID.randomUUID(), email, firstName, lastName, odooId, barcodeBase);
     }
