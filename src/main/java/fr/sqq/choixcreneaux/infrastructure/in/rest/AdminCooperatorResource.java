@@ -30,8 +30,9 @@ public class AdminCooperatorResource {
     @Produces(MediaType.APPLICATION_JSON)
     public PageResponse getPendingCooperators(
             @QueryParam("page") @DefaultValue("1") int page,
-            @QueryParam("size") @DefaultValue("10") int size) {
-        PendingCooperatorsPage result = mediator.send(new GetPendingCooperatorsPageQuery(page, size));
+            @QueryParam("size") @DefaultValue("10") int size,
+            @QueryParam("q") @DefaultValue("") String q) {
+        PendingCooperatorsPage result = mediator.send(new GetPendingCooperatorsPageQuery(page, size, q));
         List<CooperatorResponse> items = result.items().stream()
                 .map(c -> new CooperatorResponse(c.id(), c.email(), c.firstName(), c.lastName(),
                         result.lastReminderByCooperatorId().get(c.id())))

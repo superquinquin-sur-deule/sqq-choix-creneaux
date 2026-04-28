@@ -63,14 +63,17 @@ export interface CooperatorsPage {
   size: number
 }
 
-export function usePendingCooperators(page: Ref<number>, size: Ref<number>) {
+export function usePendingCooperators(page: Ref<number>, size: Ref<number>, q?: Ref<string>) {
   return useQuery({
-    queryKey: ['admin', 'cooperators', page, size],
-    queryFn: () =>
-      customFetch<{ data: CooperatorsPage }>(
-        `/api/admin/cooperators?page=${page.value}&size=${size.value}`,
+    queryKey: ['admin', 'cooperators', page, size, q ?? ''],
+    queryFn: () => {
+      const search = q?.value?.trim() ?? ''
+      const qs = `page=${page.value}&size=${size.value}` + (search ? `&q=${encodeURIComponent(search)}` : '')
+      return customFetch<{ data: CooperatorsPage }>(
+        `/api/admin/cooperators?${qs}`,
         { method: 'GET' },
-      ).then((r) => r.data),
+      ).then((r) => r.data)
+    },
     placeholderData: (previous) => previous,
   })
 }

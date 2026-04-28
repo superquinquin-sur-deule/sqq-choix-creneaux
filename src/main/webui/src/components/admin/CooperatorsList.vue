@@ -37,12 +37,25 @@
       </div>
     </div>
 
+    <div class="mb-3">
+      <input
+        v-model="search"
+        type="search"
+        placeholder="Rechercher par nom ou email…"
+        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-dark placeholder-brown/40 focus:border-dark focus:outline-none"
+      />
+    </div>
+
     <div v-if="successMessage" class="mb-3 rounded-lg border border-green-200 bg-green-50 px-4 py-2 text-sm text-green-800">
       {{ successMessage }}
     </div>
 
     <div v-if="isPending && !pageData" class="py-8 text-center text-brown/60">
       Chargement des coopérateur·ices…
+    </div>
+
+    <div v-else-if="total === 0 && search.trim()" class="rounded-lg border border-dashed border-gray-200 py-8 text-center text-brown/50">
+      Aucun coopérateur·ice trouvé·e pour « {{ search }} ».
     </div>
 
     <div v-else-if="total === 0" class="rounded-lg border border-dashed border-gray-200 py-8 text-center text-brown/50">
@@ -117,8 +130,11 @@ import { usePendingCooperators, useSendReminders } from '@/composables/useAdmin'
 
 const page = ref(1)
 const size = ref(10)
+const search = ref('')
 
-const { data: pageData, isPending } = usePendingCooperators(page, size)
+watch(search, () => { page.value = 1 })
+
+const { data: pageData, isPending } = usePendingCooperators(page, size, search)
 
 const items = computed(() => pageData.value?.items ?? [])
 const total = computed(() => pageData.value?.total ?? 0)

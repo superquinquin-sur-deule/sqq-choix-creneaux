@@ -68,6 +68,34 @@ public class PanacheCooperatorRepository implements CooperatorRepository {
                 .getSingleResult()).longValue();
     }
 
+    private static final String SEARCH_WITHOUT_REGISTRATION_FROM_WHERE =
+            " FROM cooperator c LEFT JOIN slot_registration sr ON c.id = sr.cooperator_id" +
+            " WHERE sr.id IS NULL" +
+            " AND (LOWER(c.first_name) LIKE ?1 OR LOWER(c.last_name) LIKE ?1 OR LOWER(c.email) LIKE ?1)";
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public List<Cooperator> searchWithoutRegistration(String q, int offset, int limit) {
+        String pattern = "%" + (q == null ? "" : q.trim().toLowerCase()) + "%";
+        return em.createNativeQuery(
+                "SELECT c.*" + SEARCH_WITHOUT_REGISTRATION_FROM_WHERE + " ORDER BY c.last_name, c.first_name",
+                CooperatorEntity.class)
+                .setParameter(1, pattern)
+                .setFirstResult(offset)
+                .setMaxResults(limit)
+                .getResultList().stream()
+                .map(e -> mapper.toDomain((CooperatorEntity) e)).toList();
+    }
+
+    @Override
+    public long countSearchWithoutRegistration(String q) {
+        String pattern = "%" + (q == null ? "" : q.trim().toLowerCase()) + "%";
+        return ((Number) em.createNativeQuery(
+                "SELECT COUNT(*)" + SEARCH_WITHOUT_REGISTRATION_FROM_WHERE)
+                .setParameter(1, pattern)
+                .getSingleResult()).longValue();
+    }
+
     @Override
     @SuppressWarnings("unchecked")
     public List<Cooperator> search(String q, int offset, int limit) {
