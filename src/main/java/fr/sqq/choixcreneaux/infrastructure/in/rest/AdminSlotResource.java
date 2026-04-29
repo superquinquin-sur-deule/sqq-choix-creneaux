@@ -76,9 +76,9 @@ public class AdminSlotResource {
         }
     }
 
-    public record RegistrantResponse(String firstName, String lastNameInitial) {
+    public record RegistrantResponse(String firstName, String lastName, String lastNameInitial) {
         static RegistrantResponse from(RegistrantSummary s) {
-            return new RegistrantResponse(s.firstName(), s.lastNameInitial());
+            return new RegistrantResponse(s.firstName(), s.lastName(), s.lastNameInitial());
         }
     }
 }

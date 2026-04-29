@@ -12,16 +12,25 @@ export interface DashboardResponse {
   slotsNeedingPeople: SlotResponse[]
 }
 
+export interface CooperatorSlotResponse {
+  week: string
+  dayOfWeek: string
+  startTime: string
+  endTime: string
+}
+
 export interface CooperatorResponse {
   id: string
   email: string
   firstName: string
   lastName: string
   lastReminderAt: string | null
+  slot: CooperatorSlotResponse | null
 }
 
 export interface RegistrantResponse {
   firstName: string
+  lastName: string
   lastNameInitial: string
 }
 
@@ -63,12 +72,27 @@ export interface CooperatorsPage {
   size: number
 }
 
-export function usePendingCooperators(page: Ref<number>, size: Ref<number>, q?: Ref<string>) {
+export function usePendingCooperators(
+  page: Ref<number>,
+  size: Ref<number>,
+  q?: Ref<string>,
+  withoutSlotOnly?: Ref<boolean>,
+  neverRemindedOnly?: Ref<boolean>,
+) {
   return useQuery({
-    queryKey: ['admin', 'cooperators', page, size, q ?? ''],
+    queryKey: [
+      'admin', 'cooperators', page, size,
+      q ?? '', withoutSlotOnly ?? true, neverRemindedOnly ?? false,
+    ],
     queryFn: () => {
       const search = q?.value?.trim() ?? ''
-      const qs = `page=${page.value}&size=${size.value}` + (search ? `&q=${encodeURIComponent(search)}` : '')
+      const onlyPending = withoutSlotOnly?.value ?? true
+      const onlyNew = neverRemindedOnly?.value ?? false
+      const qs =
+        `page=${page.value}&size=${size.value}` +
+        (search ? `&q=${encodeURIComponent(search)}` : '') +
+        `&withoutSlotOnly=${onlyPending}` +
+        `&neverRemindedOnly=${onlyNew}`
       return customFetch<{ data: CooperatorsPage }>(
         `/api/admin/cooperators?${qs}`,
         { method: 'GET' },

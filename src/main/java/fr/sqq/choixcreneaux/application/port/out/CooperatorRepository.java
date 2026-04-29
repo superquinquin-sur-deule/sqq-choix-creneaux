@@ -11,6 +11,8 @@ public interface CooperatorRepository {
     long countWithoutRegistration();
     List<Cooperator> searchWithoutRegistration(String q, int offset, int limit);
     long countSearchWithoutRegistration(String q);
+    List<Cooperator> searchWithoutRegistrationNeverReminded(String q, int offset, int limit);
+    long countSearchWithoutRegistrationNeverReminded(String q);
     List<Cooperator> search(String q, int offset, int limit);
     long countSearch(String q);
     long countTotal();

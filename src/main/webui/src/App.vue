@@ -17,8 +17,13 @@
           <span class="text-xl font-bold text-primary">SuperQuinquin :</span>
           <span class="text-xl font-bold text-white">choix des créneaux</span>
         </router-link>
-        <div class="text-sm text-surface/80">
+        <div class="text-sm text-surface/80 flex items-center gap-3">
           <span v-if="me">{{ me.firstName }} {{ me.lastName }}</span>
+          <a
+            v-if="me"
+            href="/api/logout"
+            class="text-primary hover:underline"
+          >Se déconnecter</a>
         </div>
       </div>
     </header>

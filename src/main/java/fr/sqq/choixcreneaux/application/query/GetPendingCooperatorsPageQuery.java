@@ -2,17 +2,32 @@ package fr.sqq.choixcreneaux.application.query;
 
 import fr.sqq.choixcreneaux.application.port.out.CooperatorRepository;
 import fr.sqq.choixcreneaux.application.port.out.EmailLogRepository;
+import fr.sqq.choixcreneaux.application.port.out.SlotRegistrationFinder;
+import fr.sqq.choixcreneaux.application.port.out.SlotRepository;
 import fr.sqq.choixcreneaux.domain.model.Cooperator;
 import fr.sqq.choixcreneaux.domain.model.EmailType;
+import fr.sqq.choixcreneaux.domain.model.Slot;
 import fr.sqq.mediator.Query;
 import fr.sqq.mediator.QueryHandler;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-public record GetPendingCooperatorsPageQuery(int page, int size, String q) implements Query<PendingCooperatorsPage> {
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+public record GetPendingCooperatorsPageQuery(int page, int size, String q, boolean withoutSlotOnly, boolean neverRemindedOnly) implements Query<PendingCooperatorsPage> {
 
     public GetPendingCooperatorsPageQuery(int page, int size) {
-        this(page, size, null);
+        this(page, size, null, true, false);
+    }
+
+    public GetPendingCooperatorsPageQuery(int page, int size, String q) {
+        this(page, size, q, true, false);
+    }
+
+    public GetPendingCooperatorsPageQuery(int page, int size, String q, boolean withoutSlotOnly) {
+        this(page, size, q, withoutSlotOnly, false);
     }
 
     private boolean hasQuery() {
@@ -23,11 +38,16 @@ public record GetPendingCooperatorsPageQuery(int page, int size, String q) imple
     public static class Handler implements QueryHandler<GetPendingCooperatorsPageQuery, PendingCooperatorsPage> {
         private final CooperatorRepository cooperatorRepo;
         private final EmailLogRepository emailLogRepo;
+        private final SlotRegistrationFinder registrationFinder;
+        private final SlotRepository slotRepo;
 
         @Inject
-        public Handler(CooperatorRepository cooperatorRepo, EmailLogRepository emailLogRepo) {
+        public Handler(CooperatorRepository cooperatorRepo, EmailLogRepository emailLogRepo,
+                       SlotRegistrationFinder registrationFinder, SlotRepository slotRepo) {
             this.cooperatorRepo = cooperatorRepo;
             this.emailLogRepo = emailLogRepo;
+            this.registrationFinder = registrationFinder;
+            this.slotRepo = slotRepo;
         }
 
         @Override
@@ -37,16 +57,37 @@ public record GetPendingCooperatorsPageQuery(int page, int size, String q) imple
             int offset = (page - 1) * size;
             long total;
             java.util.List<Cooperator> items;
-            if (query.hasQuery()) {
-                total = cooperatorRepo.countSearchWithoutRegistration(query.q());
-                items = cooperatorRepo.searchWithoutRegistration(query.q(), offset, size);
+            if (query.withoutSlotOnly()) {
+                String q = query.hasQuery() ? query.q() : "";
+                if (query.neverRemindedOnly()) {
+                    total = cooperatorRepo.countSearchWithoutRegistrationNeverReminded(q);
+                    items = cooperatorRepo.searchWithoutRegistrationNeverReminded(q, offset, size);
+                } else if (query.hasQuery()) {
+                    total = cooperatorRepo.countSearchWithoutRegistration(q);
+                    items = cooperatorRepo.searchWithoutRegistration(q, offset, size);
+                } else {
+                    total = cooperatorRepo.countWithoutRegistration();
+                    items = cooperatorRepo.findWithoutRegistration(offset, size);
+                }
             } else {
-                total = cooperatorRepo.countWithoutRegistration();
-                items = cooperatorRepo.findWithoutRegistration(offset, size);
+                String q = query.hasQuery() ? query.q() : "";
+                total = cooperatorRepo.countSearch(q);
+                items = cooperatorRepo.search(q, offset, size);
             }
             var ids = items.stream().map(Cooperator::id).toList();
             var lastReminder = emailLogRepo.findLastSentByCooperators(ids, EmailType.REMINDER);
-            return new PendingCooperatorsPage(items, total, lastReminder);
+            Map<UUID, CooperatorSlotSummary> slotByCooperatorId = new HashMap<>();
+            for (UUID id : ids) {
+                registrationFinder.findByCooperatorId(id).ifPresent(reg ->
+                        slotRepo.findById(reg.slotTemplateId()).ifPresent(slot ->
+                                slotByCooperatorId.put(id, toSummary(slot))));
+            }
+            return new PendingCooperatorsPage(items, total, lastReminder, slotByCooperatorId);
+        }
+
+        private CooperatorSlotSummary toSummary(Slot slot) {
+            return new CooperatorSlotSummary(
+                    slot.week().name(), slot.dayOfWeek(), slot.startTime(), slot.endTime());
         }
     }
 }

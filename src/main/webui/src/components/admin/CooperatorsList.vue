@@ -2,7 +2,7 @@
   <div>
     <div class="mb-3 flex items-center justify-between">
       <h2 class="text-lg font-semibold text-dark">
-        Coopérateur·ices sans créneau
+        {{ titleByFilter[filter] }}
         <span class="ml-1 text-base font-normal text-brown/60">({{ total }})</span>
       </h2>
       <div class="flex gap-2">
@@ -37,110 +37,171 @@
       </div>
     </div>
 
-    <div class="mb-3">
+    <div class="mb-3 flex flex-wrap items-center gap-3">
       <input
         v-model="search"
         type="search"
         placeholder="Rechercher par nom ou email…"
-        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-dark placeholder-brown/40 focus:border-dark focus:outline-none"
+        class="min-w-0 flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm text-dark placeholder-brown/40 focus:border-dark focus:outline-none"
       />
+      <div class="inline-flex shrink-0 rounded-lg border border-gray-300 p-0.5 text-sm">
+        <button
+          type="button"
+          class="rounded-md px-3 py-1 font-medium transition"
+          :class="filter === 'pending' ? 'bg-dark text-white' : 'text-dark hover:bg-gray-100'"
+          @click="filter = 'pending'"
+        >
+          Sans créneau
+        </button>
+        <button
+          type="button"
+          class="rounded-md px-3 py-1 font-medium transition"
+          :class="filter === 'new' ? 'bg-dark text-white' : 'text-dark hover:bg-gray-100'"
+          @click="filter = 'new'"
+        >
+          Nouveaux coops
+        </button>
+        <button
+          type="button"
+          class="rounded-md px-3 py-1 font-medium transition"
+          :class="filter === 'all' ? 'bg-dark text-white' : 'text-dark hover:bg-gray-100'"
+          @click="filter = 'all'"
+        >
+          Tous
+        </button>
+      </div>
     </div>
 
     <div v-if="successMessage" class="mb-3 rounded-lg border border-green-200 bg-green-50 px-4 py-2 text-sm text-green-800">
       {{ successMessage }}
     </div>
 
-    <div v-if="isPending && !pageData" class="py-8 text-center text-brown/60">
-      Chargement des coopérateur·ices…
-    </div>
-
-    <div v-else-if="total === 0 && search.trim()" class="rounded-lg border border-dashed border-gray-200 py-8 text-center text-brown/50">
-      Aucun coopérateur·ice trouvé·e pour « {{ search }} ».
-    </div>
-
-    <div v-else-if="total === 0" class="rounded-lg border border-dashed border-gray-200 py-8 text-center text-brown/50">
-      Tous les coopérateur·ices ont choisi un créneau !
-    </div>
-
-    <template v-else>
-      <div class="overflow-x-auto rounded-lg border border-gray-200">
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="border-b border-gray-200 bg-gray-50">
-              <th class="px-4 py-3 text-left font-medium text-brown/70">Nom</th>
-              <th class="px-4 py-3 text-left font-medium text-brown/70">Email</th>
-              <th class="px-4 py-3 text-left font-medium text-brown/70">Dernière relance</th>
-              <th class="px-4 py-3 text-right font-medium text-brown/70">Action</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-100">
-            <tr v-for="coop in items" :key="coop.id" class="bg-white hover:bg-gray-50">
-              <td class="px-4 py-3 font-medium text-dark">{{ coop.firstName }} {{ coop.lastName }}</td>
-              <td class="px-4 py-3 text-brown/70">{{ coop.email }}</td>
-              <td class="px-4 py-3 text-brown/70">
-                <span v-if="coop.lastReminderAt">{{ formatDate(coop.lastReminderAt) }}</span>
-                <span v-else class="text-brown/40">Jamais</span>
-              </td>
-              <td class="px-4 py-3 text-right">
-                <button
-                  type="button"
-                  class="rounded px-2 py-1 text-xs font-medium text-dark transition hover:bg-gray-100 disabled:opacity-50"
-                  :disabled="isSending"
-                  @click="remindOne(coop.id)"
-                >
-                  Relancer
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+    <div class="flex min-h-[34rem] flex-col">
+      <div v-if="isPending && !pageData" class="flex-1 rounded-lg border border-dashed border-gray-200 py-8 text-center text-brown/60">
+        Chargement des coopérateur·ices…
       </div>
 
-      <div v-if="pageCount > 1" class="mt-3 flex items-center justify-between text-sm text-brown/70">
-        <span>
-          {{ rangeStart }}–{{ rangeEnd }} sur {{ total }}
-        </span>
-        <div class="flex items-center gap-2">
-          <button
-            type="button"
-            class="rounded border border-gray-300 px-2 py-1 text-xs font-medium text-dark transition hover:bg-gray-50 disabled:opacity-50"
-            :disabled="page === 1"
-            @click="page--"
-          >
-            Précédent
-          </button>
-          <span>Page {{ page }} / {{ pageCount }}</span>
-          <button
-            type="button"
-            class="rounded border border-gray-300 px-2 py-1 text-xs font-medium text-dark transition hover:bg-gray-50 disabled:opacity-50"
-            :disabled="page === pageCount"
-            @click="page++"
-          >
-            Suivant
-          </button>
+      <div v-else-if="total === 0 && search.trim()" class="flex-1 rounded-lg border border-dashed border-gray-200 py-8 text-center text-brown/50">
+        Aucun coopérateur·ice trouvé·e pour « {{ search }} ».
+      </div>
+
+      <div v-else-if="total === 0 && filter === 'pending'" class="flex-1 rounded-lg border border-dashed border-gray-200 py-8 text-center text-brown/50">
+        Tous les coopérateur·ices ont choisi un créneau !
+      </div>
+
+      <div v-else-if="total === 0 && filter === 'new'" class="flex-1 rounded-lg border border-dashed border-gray-200 py-8 text-center text-brown/50">
+        Aucun·e nouveau·elle coopérateur·ice à relancer.
+      </div>
+
+      <div v-else-if="total === 0" class="flex-1 rounded-lg border border-dashed border-gray-200 py-8 text-center text-brown/50">
+        Aucun·e coopérateur·ice.
+      </div>
+
+      <template v-else>
+        <div class="overflow-x-auto rounded-lg border border-gray-200">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-gray-200 bg-gray-50">
+                <th class="px-4 py-3 text-left font-medium text-brown/70">Nom</th>
+                <th class="px-4 py-3 text-left font-medium text-brown/70">Email</th>
+                <th class="px-4 py-3 text-left font-medium text-brown/70">Créneau choisi</th>
+                <th class="px-4 py-3 text-left font-medium text-brown/70">Dernière relance</th>
+                <th class="px-4 py-3 text-right font-medium text-brown/70">Action</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+              <tr v-for="coop in items" :key="coop.id" class="bg-white hover:bg-gray-50">
+                <td class="px-4 py-3 font-medium text-dark">{{ coop.firstName }} {{ coop.lastName }}</td>
+                <td class="px-4 py-3 text-brown/70">{{ coop.email }}</td>
+                <td class="px-4 py-3 text-brown/70">
+                  <span v-if="coop.slot">{{ formatSlot(coop.slot) }}</span>
+                  <span v-else class="text-brown/40">—</span>
+                </td>
+                <td class="px-4 py-3 text-brown/70">
+                  <span v-if="coop.lastReminderAt">{{ formatDate(coop.lastReminderAt) }}</span>
+                  <span v-else class="text-brown/40">Jamais</span>
+                </td>
+                <td class="px-4 py-3 text-right">
+                  <button
+                    type="button"
+                    class="rounded px-2 py-1 text-xs font-medium text-dark transition hover:bg-gray-100 disabled:opacity-50"
+                    :disabled="isSending"
+                    @click="remindOne(coop.id)"
+                  >
+                    Relancer
+                  </button>
+                </td>
+              </tr>
+              <tr v-for="i in emptyRows" :key="`empty-${i}`" class="bg-white" aria-hidden="true">
+                <td class="px-4 py-3">&nbsp;</td>
+                <td class="px-4 py-3"></td>
+                <td class="px-4 py-3"></td>
+                <td class="px-4 py-3"></td>
+                <td class="px-4 py-3"></td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-      </div>
-    </template>
+
+        <div class="mt-3 flex items-center justify-between text-sm text-brown/70" :class="{ invisible: pageCount <= 1 }">
+          <span>
+            {{ rangeStart }}–{{ rangeEnd }} sur {{ total }}
+          </span>
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              class="rounded border border-gray-300 px-2 py-1 text-xs font-medium text-dark transition hover:bg-gray-50 disabled:opacity-50"
+              :disabled="page === 1"
+              @click="page--"
+            >
+              Précédent
+            </button>
+            <span>Page {{ page }} / {{ pageCount }}</span>
+            <button
+              type="button"
+              class="rounded border border-gray-300 px-2 py-1 text-xs font-medium text-dark transition hover:bg-gray-50 disabled:opacity-50"
+              :disabled="page === pageCount"
+              @click="page++"
+            >
+              Suivant
+            </button>
+          </div>
+        </div>
+      </template>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { usePendingCooperators, useSendReminders } from '@/composables/useAdmin'
+import { usePendingCooperators, useSendReminders, type CooperatorSlotResponse } from '@/composables/useAdmin'
+import { dayLabel, formatTime } from '@/composables/useSlots'
 
 const page = ref(1)
 const size = ref(10)
 const search = ref('')
+type Filter = 'pending' | 'new' | 'all'
+const filter = ref<Filter>('pending')
+const withoutSlotOnly = computed(() => filter.value !== 'all')
+const neverRemindedOnly = computed(() => filter.value === 'new')
+const titleByFilter: Record<Filter, string> = {
+  pending: 'Coopérateur·ices sans créneau',
+  new: 'Nouveaux coopérateur·ices',
+  all: 'Coopérateur·ices',
+}
 
-watch(search, () => { page.value = 1 })
+watch([search, filter], () => { page.value = 1 })
 
-const { data: pageData, isPending } = usePendingCooperators(page, size, search)
+const { data: pageData, isPending } = usePendingCooperators(
+  page, size, search, withoutSlotOnly, neverRemindedOnly,
+)
 
 const items = computed(() => pageData.value?.items ?? [])
 const total = computed(() => pageData.value?.total ?? 0)
 const pageCount = computed(() => Math.max(1, Math.ceil(total.value / size.value)))
 const rangeStart = computed(() => (total.value === 0 ? 0 : (page.value - 1) * size.value + 1))
 const rangeEnd = computed(() => Math.min(page.value * size.value, total.value))
+const emptyRows = computed(() => Math.max(0, size.value - items.value.length))
 
 // Keep page in range when total shrinks (e.g. after an action).
 watch(pageCount, (count) => {
@@ -158,6 +219,10 @@ const dateFormatter = new Intl.DateTimeFormat('fr-FR', {
 
 function formatDate(iso: string) {
   return dateFormatter.format(new Date(iso))
+}
+
+function formatSlot(slot: CooperatorSlotResponse): string {
+  return `Semaine ${slot.week} - ${dayLabel(slot.dayOfWeek)} ${formatTime(slot.startTime)}-${formatTime(slot.endTime)}`
 }
 
 async function remindAll() {

@@ -51,7 +51,7 @@ public record GetAdminSlotsQuery() implements Query<List<AdminSlotView>> {
 
         private RegistrantSummary toSummary(Cooperator cooperator) {
             if (cooperator == null) return null;
-            return new RegistrantSummary(cooperator.id(), cooperator.firstName(), lastNameInitial(cooperator.lastName()));
+            return new RegistrantSummary(cooperator.id(), cooperator.firstName(), cooperator.lastName(), lastNameInitial(cooperator.lastName()));
         }
 
         private String lastNameInitial(String lastName) {

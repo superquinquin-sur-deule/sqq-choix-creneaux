@@ -40,6 +40,7 @@
         <span
           v-for="(r, i) in slot.registrants"
           :key="i"
+          :title="`${r.firstName} ${r.lastName}`"
           class="inline-flex items-center rounded bg-surface px-1.5 py-0.5 text-xs text-dark"
         >
           {{ r.firstName }}<span v-if="r.lastNameInitial"> {{ r.lastNameInitial }}</span>

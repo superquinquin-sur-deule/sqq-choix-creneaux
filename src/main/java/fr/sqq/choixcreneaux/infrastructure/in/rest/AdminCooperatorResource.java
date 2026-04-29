@@ -1,5 +1,6 @@
 package fr.sqq.choixcreneaux.infrastructure.in.rest;
 
+import fr.sqq.choixcreneaux.application.query.CooperatorSlotSummary;
 import fr.sqq.choixcreneaux.application.query.GetPendingCooperatorsPageQuery;
 import fr.sqq.choixcreneaux.application.query.GetPendingCooperatorsQuery;
 import fr.sqq.choixcreneaux.application.query.PendingCooperatorsPage;
@@ -31,11 +32,14 @@ public class AdminCooperatorResource {
     public PageResponse getPendingCooperators(
             @QueryParam("page") @DefaultValue("1") int page,
             @QueryParam("size") @DefaultValue("10") int size,
-            @QueryParam("q") @DefaultValue("") String q) {
-        PendingCooperatorsPage result = mediator.send(new GetPendingCooperatorsPageQuery(page, size, q));
+            @QueryParam("q") @DefaultValue("") String q,
+            @QueryParam("withoutSlotOnly") @DefaultValue("true") boolean withoutSlotOnly,
+            @QueryParam("neverRemindedOnly") @DefaultValue("false") boolean neverRemindedOnly) {
+        PendingCooperatorsPage result = mediator.send(new GetPendingCooperatorsPageQuery(page, size, q, withoutSlotOnly, neverRemindedOnly));
         List<CooperatorResponse> items = result.items().stream()
                 .map(c -> new CooperatorResponse(c.id(), c.email(), c.firstName(), c.lastName(),
-                        result.lastReminderByCooperatorId().get(c.id())))
+                        result.lastReminderByCooperatorId().get(c.id()),
+                        SlotResponse.from(result.slotByCooperatorId().get(c.id()))))
                 .toList();
         return new PageResponse(items, result.total(), page, size);
     }
@@ -50,7 +54,7 @@ public class AdminCooperatorResource {
         PendingCooperatorsPage result = mediator.send(new SearchCooperatorsQuery(q, page, size));
         List<CooperatorResponse> items = result.items().stream()
                 .map(c -> new CooperatorResponse(c.id(), c.email(), c.firstName(), c.lastName(),
-                        result.lastReminderByCooperatorId().get(c.id())))
+                        result.lastReminderByCooperatorId().get(c.id()), null))
                 .toList();
         return new PageResponse(items, result.total(), page, size);
     }
@@ -70,7 +74,14 @@ public class AdminCooperatorResource {
         return sb.toString();
     }
 
-    public record CooperatorResponse(UUID id, String email, String firstName, String lastName, Instant lastReminderAt) {}
+    public record CooperatorResponse(UUID id, String email, String firstName, String lastName, Instant lastReminderAt, SlotResponse slot) {}
+
+    public record SlotResponse(String week, String dayOfWeek, String startTime, String endTime) {
+        static SlotResponse from(CooperatorSlotSummary s) {
+            if (s == null) return null;
+            return new SlotResponse(s.week(), s.dayOfWeek().name(), s.startTime().toString(), s.endTime().toString());
+        }
+    }
 
     public record PageResponse(List<CooperatorResponse> items, long total, int page, int size) {}
 }
