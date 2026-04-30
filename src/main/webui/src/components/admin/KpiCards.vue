@@ -39,28 +39,28 @@
       </p>
     </div>
 
-    <!-- Phase -->
+    <!-- Seats to reach minimum -->
     <div
       class="rounded-lg border p-4"
-      :class="dashboard.allMinimumsReached ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-gray-50'"
+      :class="dashboard.seatsToReachMinimum > 0 ? 'border-orange-200 bg-orange-50' : 'border-green-200 bg-green-50'"
     >
       <p
         class="text-xs font-medium uppercase tracking-wide"
-        :class="dashboard.allMinimumsReached ? 'text-green-700' : 'text-brown/60'"
+        :class="dashboard.seatsToReachMinimum > 0 ? 'text-orange-600' : 'text-green-700'"
       >
-        Phase
+        Places à pourvoir
       </p>
       <p
         class="mt-1 text-3xl font-bold"
-        :class="dashboard.allMinimumsReached ? 'text-green-800' : 'text-dark'"
+        :class="dashboard.seatsToReachMinimum > 0 ? 'text-orange-800' : 'text-green-800'"
       >
-        {{ dashboard.allMinimumsReached ? '2' : '1' }}
+        {{ dashboard.seatsToReachMinimum }}
       </p>
       <p
         class="mt-1 text-xs"
-        :class="dashboard.allMinimumsReached ? 'text-green-700/70' : 'text-brown/40'"
+        :class="dashboard.seatsToReachMinimum > 0 ? 'text-orange-600/70' : 'text-green-700/70'"
       >
-        {{ dashboard.allMinimumsReached ? 'Tous les minimums atteints' : 'Minimums non atteints' }}
+        {{ dashboard.seatsToReachMinimum > 0 ? 'pour atteindre les minimums' : 'Tous les minimums atteints' }}
       </p>
     </div>
   </div>

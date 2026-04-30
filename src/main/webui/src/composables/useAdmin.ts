@@ -9,6 +9,7 @@ export interface DashboardResponse {
   pendingCooperators: number
   slotsUnderMinimum: number
   allMinimumsReached: boolean
+  seatsToReachMinimum: number
   slotsNeedingPeople: SlotResponse[]
 }
 

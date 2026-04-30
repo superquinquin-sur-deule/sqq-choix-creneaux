@@ -12,7 +12,8 @@ import java.util.List;
 
 public record GetDashboardQuery() implements Query<GetDashboardQuery.Result> {
     public record Result(long totalCooperators, long registeredCooperators, long pendingCooperators,
-                         int slotsUnderMinimum, boolean allMinimumsReached, List<SlotWithFillInfo> slotsNeedingPeople) {}
+                         int slotsUnderMinimum, boolean allMinimumsReached, int seatsToReachMinimum,
+                         List<SlotWithFillInfo> slotsNeedingPeople) {}
 
     @ApplicationScoped
     public static class Handler implements QueryHandler<GetDashboardQuery, Result> {
@@ -37,9 +38,12 @@ public record GetDashboardQuery() implements Query<GetDashboardQuery.Result> {
                     .sorted(Comparator.comparingDouble(s -> (double) s.registrationCount() / s.slot().minCapacity()))
                     .toList();
             boolean allMinimumsReached = slotsNeedingPeople.isEmpty();
+            int seatsToReachMinimum = slotsNeedingPeople.stream()
+                    .mapToInt(s -> Math.max(0, s.slot().minCapacity() - s.registrationCount()))
+                    .sum();
 
             return new Result(total, registered, pending,
-                    slotsNeedingPeople.size(), allMinimumsReached, slotsNeedingPeople);
+                    slotsNeedingPeople.size(), allMinimumsReached, seatsToReachMinimum, slotsNeedingPeople);
         }
     }
 }

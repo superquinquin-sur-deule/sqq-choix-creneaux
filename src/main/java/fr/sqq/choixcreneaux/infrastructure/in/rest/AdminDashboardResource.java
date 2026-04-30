@@ -31,6 +31,7 @@ public class AdminDashboardResource {
                 result.pendingCooperators(),
                 result.slotsUnderMinimum(),
                 result.allMinimumsReached(),
+                result.seatsToReachMinimum(),
                 slotsNeedingPeople
         );
     }
@@ -41,6 +42,7 @@ public class AdminDashboardResource {
             long pendingCooperators,
             int slotsUnderMinimum,
             boolean allMinimumsReached,
+            int seatsToReachMinimum,
             List<SlotResource.SlotResponse> slotsNeedingPeople
     ) {}
 }
