@@ -54,7 +54,8 @@ public class AdminCooperatorResource {
         PendingCooperatorsPage result = mediator.send(new SearchCooperatorsQuery(q, page, size));
         List<CooperatorResponse> items = result.items().stream()
                 .map(c -> new CooperatorResponse(c.id(), c.email(), c.firstName(), c.lastName(),
-                        result.lastReminderByCooperatorId().get(c.id()), null))
+                        result.lastReminderByCooperatorId().get(c.id()),
+                        SlotResponse.from(result.slotByCooperatorId().get(c.id()))))
                 .toList();
         return new PageResponse(items, result.total(), page, size);
     }
