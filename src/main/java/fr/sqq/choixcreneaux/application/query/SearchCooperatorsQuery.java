@@ -37,7 +37,7 @@ public record SearchCooperatorsQuery(String q, int page, int size) implements Qu
             int size = Math.clamp(query.size(), 1, 100);
             int offset = (page - 1) * size;
             long total = cooperatorRepo.countSearch(query.q());
-            var items = cooperatorRepo.search(query.q(), offset, size);
+            var items = cooperatorRepo.search(query.q(), offset, size, CooperatorSort.DEFAULT);
             Map<UUID, CooperatorSlotSummary> slotByCooperatorId = new HashMap<>();
             for (Cooperator c : items) {
                 registrationFinder.findByCooperatorId(c.id()).ifPresent(reg ->

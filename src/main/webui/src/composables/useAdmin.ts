@@ -73,27 +73,39 @@ export interface CooperatorsPage {
   size: number
 }
 
+export type CooperatorSortField = 'name' | 'email' | 'lastReminder'
+export type SortDirection = 'asc' | 'desc'
+
 export function usePendingCooperators(
   page: Ref<number>,
   size: Ref<number>,
   q?: Ref<string>,
   withoutSlotOnly?: Ref<boolean>,
   neverRemindedOnly?: Ref<boolean>,
+  sortBy?: Ref<CooperatorSortField>,
+  sortDir?: Ref<SortDirection>,
+  withSlotOnly?: Ref<boolean>,
 ) {
   return useQuery({
     queryKey: [
       'admin', 'cooperators', page, size,
       q ?? '', withoutSlotOnly ?? true, neverRemindedOnly ?? false,
+      sortBy ?? 'name', sortDir ?? 'asc', withSlotOnly ?? false,
     ],
     queryFn: () => {
       const search = q?.value?.trim() ?? ''
       const onlyPending = withoutSlotOnly?.value ?? true
+      const onlyWithSlot = withSlotOnly?.value ?? false
       const onlyNew = neverRemindedOnly?.value ?? false
+      const by = sortBy?.value ?? 'name'
+      const dir = sortDir?.value ?? 'asc'
       const qs =
         `page=${page.value}&size=${size.value}` +
         (search ? `&q=${encodeURIComponent(search)}` : '') +
         `&withoutSlotOnly=${onlyPending}` +
-        `&neverRemindedOnly=${onlyNew}`
+        `&withSlotOnly=${onlyWithSlot}` +
+        `&neverRemindedOnly=${onlyNew}` +
+        `&sortBy=${by}&sortDir=${dir}`
       return customFetch<{ data: CooperatorsPage }>(
         `/api/admin/cooperators?${qs}`,
         { method: 'GET' },

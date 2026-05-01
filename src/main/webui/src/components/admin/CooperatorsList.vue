@@ -38,12 +38,25 @@
     </div>
 
     <div class="mb-3 flex flex-wrap items-center gap-3">
-      <input
-        v-model="search"
-        type="search"
-        placeholder="Rechercher par nom ou email…"
-        class="min-w-0 flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm text-dark placeholder-brown/40 focus:border-dark focus:outline-none"
-      />
+      <div class="relative min-w-0 flex-1">
+        <input
+          v-model="search"
+          type="search"
+          placeholder="Rechercher par nom ou email…"
+          class="w-full rounded-lg border border-gray-300 px-3 py-2 pr-9 text-sm text-dark placeholder-brown/40 focus:border-dark focus:outline-none [&::-webkit-search-cancel-button]:hidden"
+        />
+        <button
+          v-if="search"
+          type="button"
+          aria-label="Effacer la recherche"
+          class="absolute inset-y-0 right-0 flex items-center px-3 text-brown/50 hover:text-dark"
+          @click="search = ''"
+        >
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
       <div class="inline-flex shrink-0 rounded-lg border border-gray-300 p-0.5 text-sm">
         <button
           type="button"
@@ -60,6 +73,14 @@
           @click="filter = 'new'"
         >
           Nouveaux coops
+        </button>
+        <button
+          type="button"
+          class="rounded-md px-3 py-1 font-medium transition"
+          :class="filter === 'withSlot' ? 'bg-dark text-white' : 'text-dark hover:bg-gray-100'"
+          @click="filter = 'withSlot'"
+        >
+          Avec créneau
         </button>
         <button
           type="button"
@@ -93,6 +114,10 @@
         Aucun·e nouveau·elle coopérateur·ice à relancer.
       </div>
 
+      <div v-else-if="total === 0 && filter === 'withSlot'" class="flex-1 rounded-lg border border-dashed border-gray-200 py-8 text-center text-brown/50">
+        Aucun·e coopérateur·ice n'a encore choisi de créneau.
+      </div>
+
       <div v-else-if="total === 0" class="flex-1 rounded-lg border border-dashed border-gray-200 py-8 text-center text-brown/50">
         Aucun·e coopérateur·ice.
       </div>
@@ -102,10 +127,22 @@
           <table class="w-full text-sm">
             <thead>
               <tr class="border-b border-gray-200 bg-gray-50">
-                <th class="px-4 py-3 text-left font-medium text-brown/70">Nom</th>
-                <th class="px-4 py-3 text-left font-medium text-brown/70">Email</th>
+                <th class="px-4 py-3 text-left font-medium text-brown/70">
+                  <button type="button" class="inline-flex items-center gap-1 hover:text-dark" @click="toggleSort('name')">
+                    Nom<span class="w-3 text-xs">{{ sortIndicator('name') }}</span>
+                  </button>
+                </th>
+                <th class="px-4 py-3 text-left font-medium text-brown/70">
+                  <button type="button" class="inline-flex items-center gap-1 hover:text-dark" @click="toggleSort('email')">
+                    Email<span class="w-3 text-xs">{{ sortIndicator('email') }}</span>
+                  </button>
+                </th>
                 <th class="px-4 py-3 text-left font-medium text-brown/70">Créneau choisi</th>
-                <th class="px-4 py-3 text-left font-medium text-brown/70">Dernière relance</th>
+                <th class="px-4 py-3 text-left font-medium text-brown/70">
+                  <button type="button" class="inline-flex items-center gap-1 hover:text-dark" @click="toggleSort('lastReminder')">
+                    Dernière relance<span class="w-3 text-xs">{{ sortIndicator('lastReminder') }}</span>
+                  </button>
+                </th>
                 <th class="px-4 py-3 text-right font-medium text-brown/70">Action</th>
               </tr>
             </thead>
@@ -174,26 +211,45 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { usePendingCooperators, useSendReminders, type CooperatorSlotResponse } from '@/composables/useAdmin'
+import { usePendingCooperators, useSendReminders, type CooperatorSlotResponse, type CooperatorSortField, type SortDirection } from '@/composables/useAdmin'
 import { dayLabel, formatTime } from '@/composables/useSlots'
 
 const page = ref(1)
 const size = ref(10)
 const search = ref('')
-type Filter = 'pending' | 'new' | 'all'
+type Filter = 'pending' | 'new' | 'withSlot' | 'all'
 const filter = ref<Filter>('pending')
-const withoutSlotOnly = computed(() => filter.value !== 'all')
+const withoutSlotOnly = computed(() => filter.value === 'pending' || filter.value === 'new')
+const withSlotOnly = computed(() => filter.value === 'withSlot')
 const neverRemindedOnly = computed(() => filter.value === 'new')
+const sortBy = ref<CooperatorSortField>('name')
+const sortDir = ref<SortDirection>('asc')
+
+function toggleSort(field: CooperatorSortField) {
+  if (sortBy.value === field) {
+    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortBy.value = field
+    sortDir.value = 'asc'
+  }
+  page.value = 1
+}
+
+function sortIndicator(field: CooperatorSortField) {
+  if (sortBy.value !== field) return ''
+  return sortDir.value === 'asc' ? '▲' : '▼'
+}
 const titleByFilter: Record<Filter, string> = {
   pending: 'Coopérateur·ices sans créneau',
   new: 'Nouveaux coopérateur·ices',
+  withSlot: 'Coopérateur·ices avec créneau',
   all: 'Coopérateur·ices',
 }
 
 watch([search, filter], () => { page.value = 1 })
 
 const { data: pageData, isPending } = usePendingCooperators(
-  page, size, search, withoutSlotOnly, neverRemindedOnly,
+  page, size, search, withoutSlotOnly, neverRemindedOnly, sortBy, sortDir, withSlotOnly,
 )
 
 const items = computed(() => pageData.value?.items ?? [])

@@ -16,18 +16,30 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public record GetPendingCooperatorsPageQuery(int page, int size, String q, boolean withoutSlotOnly, boolean neverRemindedOnly) implements Query<PendingCooperatorsPage> {
+public record GetPendingCooperatorsPageQuery(int page, int size, String q, boolean withoutSlotOnly, boolean withSlotOnly, boolean neverRemindedOnly, CooperatorSort sort) implements Query<PendingCooperatorsPage> {
+
+    public GetPendingCooperatorsPageQuery {
+        if (sort == null) sort = CooperatorSort.DEFAULT;
+    }
 
     public GetPendingCooperatorsPageQuery(int page, int size) {
-        this(page, size, null, true, false);
+        this(page, size, null, true, false, false, CooperatorSort.DEFAULT);
     }
 
     public GetPendingCooperatorsPageQuery(int page, int size, String q) {
-        this(page, size, q, true, false);
+        this(page, size, q, true, false, false, CooperatorSort.DEFAULT);
     }
 
     public GetPendingCooperatorsPageQuery(int page, int size, String q, boolean withoutSlotOnly) {
-        this(page, size, q, withoutSlotOnly, false);
+        this(page, size, q, withoutSlotOnly, false, false, CooperatorSort.DEFAULT);
+    }
+
+    public GetPendingCooperatorsPageQuery(int page, int size, String q, boolean withoutSlotOnly, boolean neverRemindedOnly) {
+        this(page, size, q, withoutSlotOnly, false, neverRemindedOnly, CooperatorSort.DEFAULT);
+    }
+
+    public GetPendingCooperatorsPageQuery(int page, int size, String q, boolean withoutSlotOnly, boolean neverRemindedOnly, CooperatorSort sort) {
+        this(page, size, q, withoutSlotOnly, false, neverRemindedOnly, sort);
     }
 
     private boolean hasQuery() {
@@ -55,24 +67,29 @@ public record GetPendingCooperatorsPageQuery(int page, int size, String q, boole
             int page = Math.max(1, query.page());
             int size = Math.clamp(query.size(), 1, 100);
             int offset = (page - 1) * size;
+            CooperatorSort sort = query.sort() != null ? query.sort() : CooperatorSort.DEFAULT;
             long total;
             java.util.List<Cooperator> items;
             if (query.withoutSlotOnly()) {
                 String q = query.hasQuery() ? query.q() : "";
                 if (query.neverRemindedOnly()) {
                     total = cooperatorRepo.countSearchWithoutRegistrationNeverReminded(q);
-                    items = cooperatorRepo.searchWithoutRegistrationNeverReminded(q, offset, size);
+                    items = cooperatorRepo.searchWithoutRegistrationNeverReminded(q, offset, size, sort);
                 } else if (query.hasQuery()) {
                     total = cooperatorRepo.countSearchWithoutRegistration(q);
-                    items = cooperatorRepo.searchWithoutRegistration(q, offset, size);
+                    items = cooperatorRepo.searchWithoutRegistration(q, offset, size, sort);
                 } else {
                     total = cooperatorRepo.countWithoutRegistration();
-                    items = cooperatorRepo.findWithoutRegistration(offset, size);
+                    items = cooperatorRepo.findWithoutRegistration(offset, size, sort);
                 }
+            } else if (query.withSlotOnly()) {
+                String q = query.hasQuery() ? query.q() : "";
+                total = cooperatorRepo.countSearchWithRegistration(q);
+                items = cooperatorRepo.searchWithRegistration(q, offset, size, sort);
             } else {
                 String q = query.hasQuery() ? query.q() : "";
                 total = cooperatorRepo.countSearch(q);
-                items = cooperatorRepo.search(q, offset, size);
+                items = cooperatorRepo.search(q, offset, size, sort);
             }
             var ids = items.stream().map(Cooperator::id).toList();
             var lastReminder = emailLogRepo.findLastSentByCooperators(ids, EmailType.REMINDER);

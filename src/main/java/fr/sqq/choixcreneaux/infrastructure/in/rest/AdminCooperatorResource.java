@@ -1,6 +1,7 @@
 package fr.sqq.choixcreneaux.infrastructure.in.rest;
 
 import fr.sqq.choixcreneaux.application.query.CooperatorSlotSummary;
+import fr.sqq.choixcreneaux.application.query.CooperatorSort;
 import fr.sqq.choixcreneaux.application.query.GetPendingCooperatorsPageQuery;
 import fr.sqq.choixcreneaux.application.query.GetPendingCooperatorsQuery;
 import fr.sqq.choixcreneaux.application.query.PendingCooperatorsPage;
@@ -34,8 +35,12 @@ public class AdminCooperatorResource {
             @QueryParam("size") @DefaultValue("10") int size,
             @QueryParam("q") @DefaultValue("") String q,
             @QueryParam("withoutSlotOnly") @DefaultValue("true") boolean withoutSlotOnly,
-            @QueryParam("neverRemindedOnly") @DefaultValue("false") boolean neverRemindedOnly) {
-        PendingCooperatorsPage result = mediator.send(new GetPendingCooperatorsPageQuery(page, size, q, withoutSlotOnly, neverRemindedOnly));
+            @QueryParam("withSlotOnly") @DefaultValue("false") boolean withSlotOnly,
+            @QueryParam("neverRemindedOnly") @DefaultValue("false") boolean neverRemindedOnly,
+            @QueryParam("sortBy") @DefaultValue("name") String sortBy,
+            @QueryParam("sortDir") @DefaultValue("asc") String sortDir) {
+        CooperatorSort sort = CooperatorSort.of(sortBy, sortDir);
+        PendingCooperatorsPage result = mediator.send(new GetPendingCooperatorsPageQuery(page, size, q, withoutSlotOnly, withSlotOnly, neverRemindedOnly, sort));
         List<CooperatorResponse> items = result.items().stream()
                 .map(c -> new CooperatorResponse(c.id(), c.email(), c.firstName(), c.lastName(),
                         result.lastReminderByCooperatorId().get(c.id()),
