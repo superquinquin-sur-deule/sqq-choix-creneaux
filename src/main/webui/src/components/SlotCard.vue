@@ -68,6 +68,9 @@ const emit = defineEmits<{
 
 const cardClass = computed(() => {
   if (props.selected) return 'border-success bg-green-50 opacity-100'
+  if (props.slot.registrationCount === 0 && props.slot.status !== 'LOCKED') {
+    return 'border-red-500 bg-red-50 opacity-100 hover:bg-red-100 cursor-pointer'
+  }
   switch (props.slot.status) {
     case 'NEEDS_PEOPLE':
       return 'border-primary bg-amber-50 opacity-100 hover:bg-amber-100 cursor-pointer'

@@ -74,6 +74,9 @@ const props = defineProps<{
 defineEmits<{ assign: [string] }>()
 
 const cardClass = computed(() => {
+  if (props.slot.registrationCount === 0 && props.slot.status !== 'LOCKED') {
+    return 'border-red-500 bg-red-50'
+  }
   switch (props.slot.status) {
     case 'NEEDS_PEOPLE':
       return 'border-primary bg-amber-50'
