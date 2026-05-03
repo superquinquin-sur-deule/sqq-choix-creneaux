@@ -5,6 +5,7 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { Instant } from './instant';
+import type { SlotResponse } from './slotResponse';
 import type { Uuid } from './uuid';
 
 export interface CooperatorResponse {
@@ -13,4 +14,5 @@ export interface CooperatorResponse {
   firstName: string;
   lastName: string;
   lastReminderAt: Instant;
+  slot: SlotResponse;
 }

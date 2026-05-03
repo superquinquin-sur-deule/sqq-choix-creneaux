@@ -4,7 +4,7 @@
  * Choix Creneaux API
  * OpenAPI spec version: 1.0.0
  */
-import type { SlotResponse } from './slotResponse';
+import type { SlotResponse1 } from './slotResponse1';
 
 export interface DashboardResponse {
   totalCooperators: number;
@@ -12,5 +12,6 @@ export interface DashboardResponse {
   pendingCooperators: number;
   slotsUnderMinimum: number;
   allMinimumsReached: boolean;
-  slotsNeedingPeople: SlotResponse[];
+  seatsToReachMinimum: number;
+  slotsNeedingPeople: SlotResponse1[];
 }

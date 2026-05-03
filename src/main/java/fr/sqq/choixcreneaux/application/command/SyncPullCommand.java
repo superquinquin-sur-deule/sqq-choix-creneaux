@@ -35,14 +35,23 @@ public record SyncPullCommand() implements Command<SyncPullCommand.Result> {
         public Result handle(SyncPullCommand command) {
             Log.info("SyncPullCommand: pulling slot templates and cooperators from Odoo");
             var templates = odoo.pullSlotTemplates();
-            List<Slot> slots = templates.stream().map(this::toAggregate).toList();
+            List<Slot> slots = templates.stream().map(this::mergeTemplate).toList();
             slotRepo.saveAll(slots);
             var cooperators = odoo.pullCooperators();
             cooperatorRepo.saveAll(cooperators);
             return new Result(templates.size(), cooperators.size());
         }
 
-        private Slot toAggregate(SlotTemplate t) {
+        private Slot mergeTemplate(SlotTemplate t) {
+            if (t.odooTemplateId() != null) {
+                var existing = slotRepo.findByOdooTemplateId(t.odooTemplateId());
+                if (existing.isPresent()) {
+                    Slot slot = existing.get();
+                    slot.updateFromTemplate(t.week(), t.dayOfWeek(), t.startTime(), t.endTime(),
+                            t.minCapacity(), t.maxCapacity());
+                    return slot;
+                }
+            }
             return Slot.create(t.id(), t.week(), t.dayOfWeek(), t.startTime(), t.endTime(),
                     t.minCapacity(), t.maxCapacity(), t.odooTemplateId());
         }

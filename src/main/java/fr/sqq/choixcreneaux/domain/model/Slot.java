@@ -16,12 +16,12 @@ import java.util.UUID;
 public class Slot {
 
     private final UUID id;
-    private final Week week;
-    private final DayOfWeek dayOfWeek;
-    private final LocalTime startTime;
-    private final LocalTime endTime;
-    private final int minCapacity;
-    private final int maxCapacity;
+    private Week week;
+    private DayOfWeek dayOfWeek;
+    private LocalTime startTime;
+    private LocalTime endTime;
+    private int minCapacity;
+    private int maxCapacity;
     private final Long odooTemplateId;
     private final int version;
     private final Set<SlotRegistration> registrations;
@@ -81,6 +81,17 @@ public class Slot {
 
     public boolean hasCooperator(UUID cooperatorId) {
         return registrations.stream().anyMatch(r -> r.cooperatorId().equals(cooperatorId));
+    }
+
+    public void updateFromTemplate(Week week, DayOfWeek dayOfWeek, LocalTime startTime, LocalTime endTime,
+                                   int minCapacity, int maxCapacity) {
+        this.week = week;
+        this.dayOfWeek = dayOfWeek;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.minCapacity = minCapacity;
+        this.maxCapacity = maxCapacity;
+        refreshStatus();
     }
 
     public boolean isFull() {

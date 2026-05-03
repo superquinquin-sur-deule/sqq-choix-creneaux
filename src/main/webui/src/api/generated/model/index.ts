@@ -25,5 +25,6 @@ export * from './reminderRequest';
 export * from './result';
 export * from './result1';
 export * from './slotResponse';
+export * from './slotResponse1';
 export * from './slotsPageResponse';
 export * from './uuid';

@@ -8,6 +8,7 @@ import java.util.UUID;
 
 public interface SlotRepository {
     Optional<Slot> findById(UUID id);
+    Optional<Slot> findByOdooTemplateId(long odooTemplateId);
     List<Slot> findAll();
     void save(Slot slot);
     void saveAll(List<Slot> slots);

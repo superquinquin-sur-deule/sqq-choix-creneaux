@@ -7,5 +7,6 @@
 
 export interface RegistrantResponse {
   firstName: string;
+  lastName: string;
   lastNameInitial: string;
 }

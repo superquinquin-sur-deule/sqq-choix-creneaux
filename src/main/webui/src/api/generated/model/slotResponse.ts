@@ -4,17 +4,10 @@
  * Choix Creneaux API
  * OpenAPI spec version: 1.0.0
  */
-import type { DayOfWeek } from './dayOfWeek';
-import type { Uuid } from './uuid';
 
 export interface SlotResponse {
-  id: Uuid;
   week: string;
-  dayOfWeek: DayOfWeek;
+  dayOfWeek: string;
   startTime: string;
   endTime: string;
-  minCapacity: number;
-  maxCapacity: number;
-  registrationCount: number;
-  status: string;
 }

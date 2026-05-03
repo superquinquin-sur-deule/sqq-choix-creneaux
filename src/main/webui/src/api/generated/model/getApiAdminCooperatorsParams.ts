@@ -6,6 +6,12 @@
  */
 
 export type GetApiAdminCooperatorsParams = {
+neverRemindedOnly?: boolean;
 page?: number;
+q?: string;
 size?: number;
+sortBy?: string;
+sortDir?: string;
+withSlotOnly?: boolean;
+withoutSlotOnly?: boolean;
 };

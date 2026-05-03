@@ -5,9 +5,9 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { CampaignInfo } from './campaignInfo';
-import type { SlotResponse } from './slotResponse';
+import type { SlotResponse1 } from './slotResponse1';
 
 export interface SlotsPageResponse {
-  slots: SlotResponse[];
+  slots: SlotResponse1[];
   campaign: CampaignInfo;
 }

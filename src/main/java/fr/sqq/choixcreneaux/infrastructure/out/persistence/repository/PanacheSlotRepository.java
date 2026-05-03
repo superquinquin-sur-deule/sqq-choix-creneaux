@@ -33,6 +33,13 @@ public class PanacheSlotRepository implements SlotRepository {
     }
 
     @Override
+    public Optional<Slot> findByOdooTemplateId(long odooTemplateId) {
+        SlotTemplateEntity entity = SlotTemplateEntity.<SlotTemplateEntity>find("odooTemplateId", odooTemplateId).firstResult();
+        if (entity == null) return Optional.empty();
+        return Optional.of(toAggregate(entity, loadRegistrations(entity.id)));
+    }
+
+    @Override
     public List<Slot> findAll() {
         List<SlotTemplateEntity> entities = SlotTemplateEntity.listAll();
         List<SlotRegistrationEntity> allRegs = SlotRegistrationEntity.listAll();
