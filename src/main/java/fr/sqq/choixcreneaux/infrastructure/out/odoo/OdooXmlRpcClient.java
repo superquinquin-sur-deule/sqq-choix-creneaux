@@ -12,7 +12,11 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.net.URL;
 import java.time.DayOfWeek;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @ApplicationScoped
@@ -133,16 +137,16 @@ public class OdooXmlRpcClient implements OdooSyncPort {
         };
     }
 
+    private static final ZoneId PARIS_ZONE = ZoneId.of("Europe/Paris");
+    private static final DateTimeFormatter ODOO_DT_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
     private LocalTime extractTime(String datetime) {
         if (datetime == null || datetime.isBlank()) return LocalTime.of(8, 0);
-        // Odoo datetimes are "YYYY-MM-DD HH:MM:SS"
-        String[] parts = datetime.split(" ");
-        if (parts.length < 2) return LocalTime.of(8, 0);
-        String timePart = parts[1];
-        String[] timeParts = timePart.split(":");
-        int hour = Integer.parseInt(timeParts[0]);
-        int minute = timeParts.length > 1 ? Integer.parseInt(timeParts[1]) : 0;
-        return LocalTime.of(hour, minute);
+        // Odoo Datetime fields are stored and returned as naive UTC strings
+        // ("YYYY-MM-DD HH:MM:SS"). Convert to Europe/Paris before extracting
+        // the wall-clock time so the app shows local hours (handles DST).
+        LocalDateTime utc = LocalDateTime.parse(datetime, ODOO_DT_FMT);
+        return utc.atOffset(ZoneOffset.UTC).atZoneSameInstant(PARIS_ZONE).toLocalTime();
     }
 
     @Override
@@ -230,13 +234,32 @@ public class OdooXmlRpcClient implements OdooSyncPort {
     public void pushRegistration(long odooPartnerId, long odooTemplateId) {
         try {
             int uid = authenticate();
+            int ticketId = findShiftTicketId(uid, odooTemplateId);
             Map<String, Object> values = new HashMap<>();
             values.put("partner_id", (int) odooPartnerId);
             values.put("shift_template_id", (int) odooTemplateId);
+            values.put("shift_ticket_id", ticketId);
             execute(uid, "shift.template.registration", "create",
                     new Object[]{values}, Collections.emptyMap());
         } catch (Exception e) {
             throw new RuntimeException("Failed to push registration to Odoo: " + e.getMessage(), e);
         }
+    }
+
+    private int findShiftTicketId(int uid, long odooTemplateId) throws Exception {
+        Map<String, Object> kwargs = new HashMap<>();
+        kwargs.put("fields", new Object[]{"id"});
+        kwargs.put("limit", 1);
+        Object[] domain = new Object[]{
+                new Object[]{"shift_template_id", "=", (int) odooTemplateId}
+        };
+        Object[] result = (Object[]) execute(uid, "shift.template.ticket", "search_read",
+                new Object[]{domain}, kwargs);
+        if (result.length == 0) {
+            throw new RuntimeException("No shift.template.ticket found for shift template " + odooTemplateId);
+        }
+        @SuppressWarnings("unchecked")
+        Map<String, Object> record = (Map<String, Object>) result[0];
+        return ((Number) record.get("id")).intValue();
     }
 }

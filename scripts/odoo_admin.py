@@ -10,9 +10,14 @@ import csv
 import os
 import sys
 import unicodedata
+from datetime import datetime, timedelta, timezone
 from urllib.parse import urlparse
+from zoneinfo import ZoneInfo
 
 import odoorpc
+
+PARIS_TZ = ZoneInfo("Europe/Paris")
+ODOO_DT_FMT = "%Y-%m-%d %H:%M:%S"
 
 
 SLOT_FIELDS = [
@@ -169,6 +174,11 @@ def export_records_to_csv(records, fields, path):
 
 def _row_to_values(row):
     values = {col: row[col].strip() for col in CSV_REQUIRED_COLUMNS}
+    # CSV datetimes are Europe/Paris local time; Odoo persists Datetime fields
+    # in UTC, so we must convert before sending — otherwise the UI shows the
+    # values shifted by the Paris offset (the bug fix-template-tz cleans up).
+    for dt_col in ("start_datetime", "end_datetime"):
+        values[dt_col] = _shift_by(values[dt_col], _paris_offset_at(values[dt_col]))
     wl = values["week_list"].lower()
     if wl not in WEEK_LIST_ALIASES:
         raise ValueError(
@@ -244,6 +254,105 @@ def create_slots_from_csv(odoo, csv_path, dry_run=False):
     return created, failed
 
 
+def _paris_offset_at(naive_str):
+    """Return the Europe/Paris UTC offset (timedelta) at the given naive datetime."""
+    naive = datetime.strptime(naive_str, ODOO_DT_FMT)
+    return naive.replace(tzinfo=PARIS_TZ).utcoffset()
+
+
+def _shift_by(naive_str, delta):
+    """Return naive 'YYYY-MM-DD HH:MM:SS' shifted by delta (timedelta)."""
+    return (datetime.strptime(naive_str, ODOO_DT_FMT) - delta).strftime(ODOO_DT_FMT)
+
+
+def fix_template_tz_from_csv(odoo, csv_path, apply=False):
+    """Find shift.templates whose (week_list, start_datetime, end_datetime) match
+    rows of the CSV (which holds Paris-local times stored as-if-UTC by a buggy
+    create) and rewrite their datetimes to true UTC. Also rewrites derived
+    shift.shift.date_begin/date_end the same way.
+    """
+    with open(csv_path, newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        rows = list(reader)
+
+    print(f"\n{'Applying' if apply else 'Dry-run:'} tz fix from {csv_path} ({len(rows)} rows)")
+
+    matched_template_ids = []
+    skipped = 0
+    not_found = 0
+    multi = 0
+
+    for lineno, row in enumerate(rows, start=2):
+        wl_raw = (row.get("week_list") or "").strip().lower()
+        wl = WEEK_LIST_ALIASES.get(wl_raw)
+        start = (row.get("start_datetime") or "").strip()
+        end = (row.get("end_datetime") or "").strip()
+        if not (wl and start and end):
+            print(f"  line {lineno}: SKIP missing fields", file=sys.stderr)
+            skipped += 1
+            continue
+
+        domain = [
+            ("week_list", "=", wl),
+            ("start_datetime", "=", start),
+            ("end_datetime", "=", end),
+        ]
+        ids = odoo.env["shift.template"].search(domain)
+        if not ids:
+            print(f"  line {lineno}: NOT FOUND week_list={wl} start={start}", file=sys.stderr)
+            not_found += 1
+            continue
+        if len(ids) > 1:
+            print(f"  line {lineno}: AMBIGUOUS {len(ids)} matches for week_list={wl} start={start} → {ids}", file=sys.stderr)
+            multi += 1
+            continue
+
+        tid = ids[0]
+        # Offset is computed from the template date (the moment the bug was
+        # introduced). Derived shift.shift inherit the same offset — Odoo
+        # projected them keeping the wrong Paris-displayed hour, so the
+        # absolute UTC error is constant across the recurrence.
+        offset = _paris_offset_at(start)
+        new_start = _shift_by(start, offset)
+        new_end = _shift_by(end, offset)
+        print(f"  line {lineno}: template id={tid} (offset {offset}) "
+              f"{start}→{new_start} | {end}→{new_end}")
+        matched_template_ids.append((tid, offset, new_start, new_end))
+
+    # Derived shift.shift records — apply each parent template's offset
+    shift_updates = []
+    offset_by_template = {tid: off for tid, off, _, _ in matched_template_ids}
+    if matched_template_ids:
+        derived = odoo.env["shift.shift"].search(
+            [("shift_template_id", "in", list(offset_by_template))]
+        )
+        derived_recs = odoo.env["shift.shift"].read(derived, ["date_begin", "date_end", "shift_template_id"])
+        print(f"\n  {len(derived_recs)} derived shift.shift to rewrite:")
+        for r in derived_recs:
+            parent_tid = r["shift_template_id"][0]
+            off = offset_by_template[parent_tid]
+            new_b = _shift_by(r["date_begin"], off)
+            new_e = _shift_by(r["date_end"], off)
+            print(f"    shift id={r['id']} (template {parent_tid}, offset {off}) "
+                  f"{r['date_begin']}→{new_b} | {r['date_end']}→{new_e}")
+            shift_updates.append((r["id"], new_b, new_e))
+
+    print(f"\nSummary: matched={len(matched_template_ids)} not_found={not_found} "
+          f"ambiguous={multi} skipped={skipped} derived_shifts={len(shift_updates)}")
+
+    if not apply:
+        print("(dry-run; rerun with --apply to write)")
+        return 0
+
+    print("\nApplying writes...")
+    for tid, _, ns, ne in matched_template_ids:
+        odoo.env["shift.template"].write([tid], {"start_datetime": ns, "end_datetime": ne})
+    for sid, nb, ne in shift_updates:
+        odoo.env["shift.shift"].write([sid], {"date_begin": nb, "date_end": ne})
+    print(f"Wrote {len(matched_template_ids)} templates and {len(shift_updates)} shifts.")
+    return 0
+
+
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -271,6 +380,18 @@ def parse_args(argv=None):
         "--dry-run",
         action="store_true",
         help="parse and validate the CSV without calling Odoo",
+    )
+
+    p_fix = sub.add_parser(
+        "fix-template-tz",
+        help="rewrite shift.template/shift.shift datetimes that were stored as "
+             "Paris-local-time-as-UTC into true UTC (matches templates by CSV)",
+    )
+    p_fix.add_argument("csv_path", help="path to CSV used to seed the buggy templates")
+    p_fix.add_argument(
+        "--apply",
+        action="store_true",
+        help="actually write changes (default: dry-run)",
     )
 
     return parser.parse_args(argv)
@@ -312,6 +433,13 @@ def main(argv=None):
             print(f"ERROR: {e}", file=sys.stderr)
             return 1
         return 1 if failed else 0
+
+    if args.cmd == "fix-template-tz":
+        try:
+            return fix_template_tz_from_csv(odoo, args.csv_path, apply=args.apply)
+        except (OSError, ValueError) as e:
+            print(f"ERROR: {e}", file=sys.stderr)
+            return 1
 
     return 0
 

@@ -6,6 +6,6 @@
  */
 
 export interface Result1 {
-  slotsImported: number;
-  cooperatorsImported: number;
+  pushed: boolean;
+  reason: string;
 }

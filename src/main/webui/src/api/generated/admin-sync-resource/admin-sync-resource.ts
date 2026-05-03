@@ -5,9 +5,11 @@
  * OpenAPI spec version: 1.0.0
  */
 import type {
+  PushOneRequest,
   PushResponse,
   Result,
-  Result1
+  Result1,
+  Result2
 } from '../model';
 
 import { customFetch } from '../../mutator/custom-fetch';
@@ -63,7 +65,7 @@ export const postApiAdminSyncCooperators = async ( options?: RequestInit): Promi
  * @summary Pull
  */
 export type postApiAdminSyncPullResponse200 = {
-  data: Result1
+  data: Result2
   status: 200
 }
 
@@ -149,6 +151,59 @@ export const postApiAdminSyncPush = async ( options?: RequestInit): Promise<post
     method: 'POST'
 
 
+  }
+);}
+
+
+/**
+ * @summary Push One
+ */
+export type postApiAdminSyncPushOneResponse200 = {
+  data: Result1
+  status: 200
+}
+
+export type postApiAdminSyncPushOneResponse400 = {
+  data: void
+  status: 400
+}
+
+export type postApiAdminSyncPushOneResponse401 = {
+  data: void
+  status: 401
+}
+
+export type postApiAdminSyncPushOneResponse403 = {
+  data: void
+  status: 403
+}
+
+export type postApiAdminSyncPushOneResponseSuccess = (postApiAdminSyncPushOneResponse200) & {
+  headers: Headers;
+};
+export type postApiAdminSyncPushOneResponseError = (postApiAdminSyncPushOneResponse400 | postApiAdminSyncPushOneResponse401 | postApiAdminSyncPushOneResponse403) & {
+  headers: Headers;
+};
+
+export type postApiAdminSyncPushOneResponse = (postApiAdminSyncPushOneResponseSuccess | postApiAdminSyncPushOneResponseError)
+
+export const getPostApiAdminSyncPushOneUrl = () => {
+
+
+
+
+  return `/api/admin/sync/push-one`
+}
+
+export const postApiAdminSyncPushOne = async (pushOneRequest: PushOneRequest, options?: RequestInit): Promise<postApiAdminSyncPushOneResponse> => {
+
+  return customFetch<postApiAdminSyncPushOneResponse>(getPostApiAdminSyncPushOneUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      pushOneRequest,)
   }
 );}
 

@@ -169,6 +169,24 @@ export function useSyncSlots() {
   })
 }
 
+export function usePushOneRegistration() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (cooperatorId: string) =>
+      customFetch<{ data: { pushed: boolean; reason: string | null } }>(
+        '/api/admin/sync/push-one',
+        {
+          method: 'POST',
+          body: JSON.stringify({ cooperatorId }),
+          headers: { 'Content-Type': 'application/json' },
+        },
+      ).then((r) => r.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin'] })
+    },
+  })
+}
+
 export function useSendReminders() {
   const queryClient = useQueryClient()
   return useMutation({
