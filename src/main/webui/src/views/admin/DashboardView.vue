@@ -35,7 +35,7 @@
             v-for="week in weeks"
             :key="week"
             type="button"
-            class="flex items-center gap-2 rounded-lg border-2 px-3 py-1.5 text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50"
+            class="flex flex-col items-start gap-1 rounded-lg border-2 px-3 py-2 text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50"
             :class="
               activeWeek === week
                 ? 'border-dark bg-primary text-dark'
@@ -43,12 +43,20 @@
             "
             @click="activeWeek = week"
           >
-            Semaine {{ week }}
-            <span
-              v-if="needingCountForWeek(week) > 0"
-              class="inline-flex items-center rounded-full bg-amber-400 px-2 py-0.5 text-xs font-semibold text-amber-900"
-            >
-              {{ needingCountForWeek(week) }}
+            <span class="font-semibold">Semaine {{ week }}</span>
+            <span class="flex flex-col items-start gap-0.5 text-xs font-normal leading-tight">
+              <span class="flex items-center gap-1.5">
+                <span class="inline-block h-2 w-2 rounded-full bg-green-500"></span>
+                <span>{{ weekStats(week).aboveMin }} au-dessus du minimum</span>
+              </span>
+              <span class="flex items-center gap-1.5">
+                <span class="inline-block h-2 w-2 rounded-full bg-amber-400"></span>
+                <span>{{ weekStats(week).belowMin }} en dessous du minimum</span>
+              </span>
+              <span class="flex items-center gap-1.5">
+                <span class="inline-block h-2 w-2 rounded-full bg-red-500"></span>
+                <span>{{ weekStats(week).empty }} sans aucun inscrit</span>
+              </span>
             </span>
           </button>
         </div>
@@ -86,7 +94,16 @@ const weeks = ['A', 'B', 'C', 'D'] as const
 const activeWeek = ref<string>('A')
 const showOnlyUnderMin = ref(false)
 
-function needingCountForWeek(week: string): number {
-  return (adminSlots.value ?? []).filter((s) => s.week === week && s.status === 'NEEDS_PEOPLE').length
+function weekStats(week: string): { aboveMin: number; belowMin: number; empty: number } {
+  const slots = (adminSlots.value ?? []).filter((s) => s.week === week)
+  let aboveMin = 0
+  let belowMin = 0
+  let empty = 0
+  for (const s of slots) {
+    if (s.registrationCount === 0) empty++
+    else if (s.registrationCount < s.minCapacity) belowMin++
+    else aboveMin++
+  }
+  return { aboveMin, belowMin, empty }
 }
 </script>
