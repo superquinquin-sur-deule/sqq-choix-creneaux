@@ -5,5 +5,5 @@ import java.util.List;
 public interface OdooSyncPort {
     List<SlotTemplate> pullSlotTemplates();
     List<Cooperator> pullCooperators();
-    void pushRegistration(long odooPartnerId, long odooTemplateId);
+    PushOutcome pushRegistration(long odooPartnerId, long odooTemplateId);
 }

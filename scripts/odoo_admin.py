@@ -353,6 +353,82 @@ def fix_template_tz_from_csv(odoo, csv_path, apply=False):
     return 0
 
 
+def sync_ticket_caps(odoo, template_ids=None, apply=False):
+    """Mirror each shift.template.seats_max onto its ABCD and Volant tickets
+    (shift.template.ticket). Per upstream coop_shift, ticket-level seats_max is
+    what caps registrations per type — the template-level seats_max is only the
+    global cap. Writing the ticket also propagates to future shift.ticket rows
+    (see shift_template_ticket.write override).
+    """
+    domain = [("active", "=", True)]
+    if template_ids:
+        domain.append(("id", "in", list(template_ids)))
+    tids = odoo.env["shift.template"].search(domain)
+    templates = odoo.env["shift.template"].read(
+        tids, ["id", "name", "seats_max"]
+    )
+    print(f"\n{'Applying' if apply else 'Dry-run:'} sync ticket caps "
+          f"on {len(templates)} template(s)")
+
+    ticket_ids = odoo.env["shift.template.ticket"].search(
+        [("shift_template_id", "in", tids)]
+    )
+    tickets = odoo.env["shift.template.ticket"].read(
+        ticket_ids,
+        ["id", "name", "shift_type", "seats_max", "shift_template_id"],
+    )
+    by_template = {}
+    for t in tickets:
+        by_template.setdefault(t["shift_template_id"][0], []).append(t)
+
+    updates = []  # (ticket_id, current_max, new_max)
+    skipped_no_cap = 0
+    for tpl in templates:
+        cap = tpl.get("seats_max") or 0
+        tpl_tickets = by_template.get(tpl["id"], [])
+        if cap <= 0:
+            print(f"  template id={tpl['id']} {tpl.get('name')!r}: SKIP "
+                  f"seats_max={cap} (set template seats_max first)")
+            skipped_no_cap += 1
+            continue
+        if not tpl_tickets:
+            print(f"  template id={tpl['id']} {tpl.get('name')!r}: "
+                  f"no tickets found", file=sys.stderr)
+            continue
+        for tk in tpl_tickets:
+            cur = tk.get("seats_max") or 0
+            marker = "=" if cur == cap else "→"
+            print(f"  template id={tpl['id']} ticket id={tk['id']} "
+                  f"type={tk.get('shift_type')!r} seats_max {cur} {marker} {cap}")
+            if cur != cap:
+                updates.append(tk["id"])
+
+    print(f"\nSummary: templates={len(templates)} tickets_to_update={len(updates)} "
+          f"skipped_no_cap={skipped_no_cap}")
+
+    if not apply:
+        print("(dry-run; rerun with --apply to write)")
+        return 0
+
+    # Group writes by target seats_max value to minimize calls. Most templates
+    # likely share caps, so this batches them.
+    by_cap = {}
+    for tpl in templates:
+        cap = tpl.get("seats_max") or 0
+        if cap <= 0:
+            continue
+        for tk in by_template.get(tpl["id"], []):
+            if (tk.get("seats_max") or 0) != cap:
+                by_cap.setdefault(cap, []).append(tk["id"])
+
+    for cap, ids in by_cap.items():
+        odoo.env["shift.template.ticket"].write(
+            ids, {"seats_max": cap, "seats_availability": "limited"}
+        )
+        print(f"Wrote seats_max={cap} on {len(ids)} ticket(s)")
+    return 0
+
+
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -389,6 +465,22 @@ def parse_args(argv=None):
     )
     p_fix.add_argument("csv_path", help="path to CSV used to seed the buggy templates")
     p_fix.add_argument(
+        "--apply",
+        action="store_true",
+        help="actually write changes (default: dry-run)",
+    )
+
+    p_sync = sub.add_parser(
+        "sync-ticket-caps",
+        help="copy each shift.template seats_max onto its ABCD and Volant "
+             "tickets (shift.template.ticket); the per-ticket cap is what "
+             "actually limits registrations per type",
+    )
+    p_sync.add_argument(
+        "--template-ids",
+        help="comma-separated shift.template ids to restrict to (default: all active)",
+    )
+    p_sync.add_argument(
         "--apply",
         action="store_true",
         help="actually write changes (default: dry-run)",
@@ -433,6 +525,20 @@ def main(argv=None):
             print(f"ERROR: {e}", file=sys.stderr)
             return 1
         return 1 if failed else 0
+
+    if args.cmd == "sync-ticket-caps":
+        ids = None
+        if args.template_ids:
+            try:
+                ids = [int(x) for x in args.template_ids.split(",") if x.strip()]
+            except ValueError as e:
+                print(f"ERROR: invalid --template-ids: {e}", file=sys.stderr)
+                return 1
+        try:
+            return sync_ticket_caps(odoo, template_ids=ids, apply=args.apply)
+        except Exception as e:
+            print(f"ERROR: {e}", file=sys.stderr)
+            return 1
 
     if args.cmd == "fix-template-tz":
         try:

@@ -1,6 +1,7 @@
 package fr.sqq.choixcreneaux.infrastructure.out.odoo;
 
 import fr.sqq.choixcreneaux.application.port.out.OdooSyncPort;
+import fr.sqq.choixcreneaux.application.port.out.PushOutcome;
 import fr.sqq.choixcreneaux.domain.model.Cooperator;
 import fr.sqq.choixcreneaux.domain.model.SlotTemplate;
 import fr.sqq.choixcreneaux.domain.model.Week;
@@ -231,9 +232,36 @@ public class OdooXmlRpcClient implements OdooSyncPort {
     }
 
     @Override
-    public void pushRegistration(long odooPartnerId, long odooTemplateId) {
+    public PushOutcome pushRegistration(long odooPartnerId, long odooTemplateId) {
         try {
             int uid = authenticate();
+
+            List<Map<String, Object>> existing = findRegistrationsForPartner(uid, odooPartnerId);
+            List<Integer> toRemove = new ArrayList<>();
+            boolean alreadyOnTarget = false;
+            for (Map<String, Object> reg : existing) {
+                long templateId = extractRelationId(reg.get("shift_template_id"));
+                int regId = ((Number) reg.get("id")).intValue();
+                if (templateId == odooTemplateId) {
+                    alreadyOnTarget = true;
+                } else {
+                    toRemove.add(regId);
+                }
+            }
+
+            if (alreadyOnTarget && toRemove.isEmpty()) {
+                return PushOutcome.UNCHANGED;
+            }
+
+            if (!toRemove.isEmpty()) {
+                execute(uid, "shift.template.registration", "unlink",
+                        new Object[]{toRemove.toArray()}, Collections.emptyMap());
+            }
+
+            if (alreadyOnTarget) {
+                return PushOutcome.MOVED;
+            }
+
             int ticketId = findShiftTicketId(uid, odooTemplateId);
             Map<String, Object> values = new HashMap<>();
             values.put("partner_id", (int) odooPartnerId);
@@ -241,9 +269,35 @@ public class OdooXmlRpcClient implements OdooSyncPort {
             values.put("shift_ticket_id", ticketId);
             execute(uid, "shift.template.registration", "create",
                     new Object[]{values}, Collections.emptyMap());
+            return toRemove.isEmpty() ? PushOutcome.CREATED : PushOutcome.MOVED;
         } catch (Exception e) {
             throw new RuntimeException("Failed to push registration to Odoo: " + e.getMessage(), e);
         }
+    }
+
+    private List<Map<String, Object>> findRegistrationsForPartner(int uid, long odooPartnerId) throws Exception {
+        Map<String, Object> kwargs = new HashMap<>();
+        kwargs.put("fields", new Object[]{"id", "shift_template_id"});
+        Object[] domain = new Object[]{
+                new Object[]{"partner_id", "=", (int) odooPartnerId}
+        };
+        Object[] result = (Object[]) execute(uid, "shift.template.registration", "search_read",
+                new Object[]{domain}, kwargs);
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (Object item : result) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> record = (Map<String, Object>) item;
+            out.add(record);
+        }
+        return out;
+    }
+
+    private long extractRelationId(Object many2one) {
+        // Odoo returns many2one as [id, "display name"] or false
+        if (many2one instanceof Object[] arr && arr.length > 0 && arr[0] instanceof Number n) {
+            return n.longValue();
+        }
+        return 0L;
     }
 
     private int findShiftTicketId(int uid, long odooTemplateId) throws Exception {

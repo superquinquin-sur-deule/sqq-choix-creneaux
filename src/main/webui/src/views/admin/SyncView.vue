@@ -8,7 +8,7 @@
     </div>
 
     <div class="space-y-4">
-      <div class="flex items-center gap-3">
+      <div class="flex flex-wrap items-center gap-3">
         <button
           type="button"
           class="inline-flex items-center gap-1 rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-dark transition hover:bg-gray-50 disabled:opacity-50"
@@ -26,6 +26,17 @@
         >
           <span v-if="isPullingSlots">Récupération…</span>
           <span v-else>Récupérer les créneaux d'Odoo</span>
+        </button>
+        <button
+          type="button"
+          class="inline-flex items-center gap-1 rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-dark transition hover:bg-gray-50 disabled:opacity-50"
+          :disabled="isStreaming"
+          @click="pushAll"
+        >
+          <span v-if="isStreaming">
+            Envoi… {{ progress.processed }}/{{ progress.total }}
+          </span>
+          <span v-else>Pousser toutes les inscriptions vers Odoo</span>
         </button>
       </div>
 
@@ -65,12 +76,37 @@
       </div>
 
       <p v-if="syncMessage" class="text-sm" :class="messageClass">{{ syncMessage }}</p>
+
+      <div v-if="logs.length > 0" class="rounded-lg border border-gray-200 bg-gray-900 p-3">
+        <div class="mb-2 flex items-center justify-between">
+          <h2 class="text-xs font-semibold uppercase tracking-wide text-gray-300">
+            Journal de synchronisation
+          </h2>
+          <button
+            type="button"
+            class="text-xs text-gray-400 hover:text-white"
+            @click="clearLogs"
+            :disabled="isStreaming"
+          >
+            Effacer
+          </button>
+        </div>
+        <pre
+          ref="logPanel"
+          class="max-h-80 overflow-y-auto whitespace-pre-wrap break-words font-mono text-xs leading-relaxed"
+        ><span
+          v-for="(line, idx) in logs"
+          :key="idx"
+          :class="logColor(line.level)"
+        >{{ formatLine(line) }}
+</span></pre>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
 import {
   useSyncCooperators,
   useSyncSlots,
@@ -100,6 +136,19 @@ const { data: cooperatorsPage, isLoading: isLoadingCooperators } = usePendingCoo
 const cooperatorsWithSlot = computed(() => cooperatorsPage.value?.items ?? [])
 const selectedCooperatorId = ref('')
 
+interface LogLine {
+  level: string
+  message: string
+  processed: number
+  total: number
+}
+
+const logs = ref<LogLine[]>([])
+const isStreaming = ref(false)
+const progress = ref({ processed: 0, total: 0 })
+const logPanel = ref<HTMLElement | null>(null)
+let eventSource: EventSource | null = null
+
 function showMessage(msg: string, error = false) {
   syncMessage.value = msg
   messageIsError.value = error
@@ -115,6 +164,40 @@ function formatSlot(slot: CooperatorSlotResponse | null) {
   if (!slot) return ''
   const day = DAY_LABELS[slot.dayOfWeek] ?? slot.dayOfWeek
   return ` — ${slot.week} ${day} ${slot.startTime}-${slot.endTime}`
+}
+
+function logColor(level: string) {
+  switch (level) {
+    case 'error': return 'text-red-400'
+    case 'warn': return 'text-yellow-300'
+    default: return 'text-gray-100'
+  }
+}
+
+function formatLine(line: LogLine) {
+  const prefix = line.total > 0 ? `[${line.processed}/${line.total}] ` : ''
+  return `${prefix}${line.message}`
+}
+
+async function appendLog(line: LogLine) {
+  logs.value.push(line)
+  progress.value = { processed: line.processed, total: line.total }
+  await nextTick()
+  const el = logPanel.value
+  if (el) el.scrollTop = el.scrollHeight
+}
+
+function closeStream() {
+  if (eventSource) {
+    eventSource.close()
+    eventSource = null
+  }
+  isStreaming.value = false
+}
+
+function clearLogs() {
+  logs.value = []
+  progress.value = { processed: 0, total: 0 }
 }
 
 async function syncCooperators() {
@@ -140,7 +223,12 @@ async function pushOne() {
   try {
     const result = await runPushOne(selectedCooperatorId.value)
     if (result.pushed) {
-      showMessage('Inscription poussée vers Odoo.')
+      const outcomeLabel: Record<string, string> = {
+        created: 'Inscription créée dans Odoo.',
+        moved: 'Inscription déplacée vers le nouveau créneau.',
+        unchanged: 'Déjà à jour, rien à faire.',
+      }
+      showMessage(outcomeLabel[result.outcome ?? ''] ?? 'Inscription poussée vers Odoo.')
     } else if (result.reason === 'no_registration') {
       showMessage("Aucune inscription pour ce·tte coopérateur·ice.", true)
     } else if (result.reason === 'missing_odoo_ids') {
@@ -152,4 +240,38 @@ async function pushOne() {
     showMessage("Échec de l'envoi vers Odoo.", true)
   }
 }
+
+function pushAll() {
+  if (isStreaming.value) return
+  clearLogs()
+  isStreaming.value = true
+  const es = new EventSource('/api/admin/sync/push-stream', { withCredentials: true })
+  eventSource = es
+  es.onmessage = (event) => {
+    try {
+      const line = JSON.parse(event.data) as LogLine
+      void appendLog(line)
+    } catch (e) {
+      console.error('Failed to parse SSE event', e, event.data)
+    }
+  }
+  es.onerror = () => {
+    // EventSource fires onerror on normal close as well; treat readyState=CLOSED as end.
+    if (es.readyState === EventSource.CLOSED) {
+      closeStream()
+    } else {
+      void appendLog({
+        level: 'error',
+        message: 'Connexion au flux interrompue.',
+        processed: progress.value.processed,
+        total: progress.value.total,
+      })
+      closeStream()
+    }
+  }
+}
+
+onBeforeUnmount(() => {
+  closeStream()
+})
 </script>

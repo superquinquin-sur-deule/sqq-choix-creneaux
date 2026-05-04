@@ -11,7 +11,7 @@ import java.util.UUID;
 
 public record SyncPushOneCommand(UUID cooperatorId) implements Command<SyncPushOneCommand.Result> {
 
-    public record Result(boolean pushed, String reason) {}
+    public record Result(boolean pushed, String reason, String outcome) {}
 
     @ApplicationScoped
     public static class Handler implements CommandHandler<SyncPushOneCommand, Result> {
@@ -34,16 +34,16 @@ public record SyncPushOneCommand(UUID cooperatorId) implements Command<SyncPushO
             Log.infof("SyncPushOneCommand: pushing registration for cooperator %s", command.cooperatorId());
             var registration = registrationRepo.findByCooperatorId(command.cooperatorId()).orElse(null);
             if (registration == null) {
-                return new Result(false, "no_registration");
+                return new Result(false, "no_registration", null);
             }
             var slot = slotRepo.findById(registration.slotTemplateId()).orElse(null);
             var coop = cooperatorRepo.findById(registration.cooperatorId()).orElse(null);
             if (slot == null || coop == null || slot.odooTemplateId() == null || coop.odooPartnerId() == null) {
                 Log.warnf("Cannot push registration for cooperator %s: missing Odoo IDs", command.cooperatorId());
-                return new Result(false, "missing_odoo_ids");
+                return new Result(false, "missing_odoo_ids", null);
             }
-            odoo.pushRegistration(coop.odooPartnerId(), slot.odooTemplateId());
-            return new Result(true, null);
+            PushOutcome outcome = odoo.pushRegistration(coop.odooPartnerId(), slot.odooTemplateId());
+            return new Result(true, null, outcome.name().toLowerCase());
         }
     }
 }
