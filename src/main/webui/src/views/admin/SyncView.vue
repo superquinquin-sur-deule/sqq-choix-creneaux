@@ -27,17 +27,45 @@
           <span v-if="isPullingSlots">Récupération…</span>
           <span v-else>Récupérer les créneaux d'Odoo</span>
         </button>
-        <button
-          type="button"
-          class="inline-flex items-center gap-1 rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-dark transition hover:bg-gray-50 disabled:opacity-50"
-          :disabled="isStreaming"
-          @click="pushAll"
-        >
-          <span v-if="isStreaming">
-            Envoi… {{ progress.processed }}/{{ progress.total }}
-          </span>
-          <span v-else>Pousser toutes les inscriptions vers Odoo</span>
-        </button>
+        <div class="inline-flex items-center gap-2">
+          <button
+            type="button"
+            class="inline-flex items-center gap-1 rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-dark transition hover:bg-gray-50 disabled:opacity-50"
+            :disabled="isStreaming"
+            @click="pushAll"
+          >
+            <span v-if="isStreaming">
+              Envoi… {{ progress.processed }}/{{ progress.total }}
+            </span>
+            <span v-else>Pousser toutes les inscriptions vers Odoo</span>
+          </button>
+          <div class="flex items-center gap-1 rounded-lg border border-gray-300 px-2 py-1 text-xs text-dark">
+            <span class="text-brown/70">Semaines&nbsp;:</span>
+            <label class="flex items-center gap-1">
+              <input
+                type="checkbox"
+                :checked="allWeeksSelected"
+                :disabled="isStreaming"
+                @change="toggleAllWeeks(($event.target as HTMLInputElement).checked)"
+              />
+              <span>Toutes</span>
+            </label>
+            <label
+              v-for="w in WEEK_OPTIONS"
+              :key="w"
+              class="flex items-center gap-1"
+            >
+              <input
+                type="checkbox"
+                :value="w"
+                :checked="selectedWeeks.includes(w)"
+                :disabled="isStreaming"
+                @change="toggleWeek(w, ($event.target as HTMLInputElement).checked)"
+              />
+              <span>{{ w }}</span>
+            </label>
+          </div>
+        </div>
       </div>
 
       <div class="rounded-lg border border-gray-200 p-4">
@@ -135,6 +163,25 @@ const { data: cooperatorsPage, isLoading: isLoadingCooperators } = usePendingCoo
 
 const cooperatorsWithSlot = computed(() => cooperatorsPage.value?.items ?? [])
 const selectedCooperatorId = ref('')
+
+const WEEK_OPTIONS = ['A', 'B', 'C', 'D'] as const
+type WeekOption = (typeof WEEK_OPTIONS)[number]
+const selectedWeeks = ref<WeekOption[]>([...WEEK_OPTIONS])
+const allWeeksSelected = computed(() => selectedWeeks.value.length === WEEK_OPTIONS.length)
+
+function toggleAllWeeks(checked: boolean) {
+  selectedWeeks.value = checked ? [...WEEK_OPTIONS] : []
+}
+
+function toggleWeek(week: WeekOption, checked: boolean) {
+  if (checked) {
+    if (!selectedWeeks.value.includes(week)) {
+      selectedWeeks.value = [...selectedWeeks.value, week]
+    }
+  } else {
+    selectedWeeks.value = selectedWeeks.value.filter((w) => w !== week)
+  }
+}
 
 interface LogLine {
   level: string
@@ -243,9 +290,16 @@ async function pushOne() {
 
 function pushAll() {
   if (isStreaming.value) return
+  if (selectedWeeks.value.length === 0) {
+    showMessage('Sélectionnez au moins une semaine.', true)
+    return
+  }
   clearLogs()
   isStreaming.value = true
-  const es = new EventSource('/api/admin/sync/push-stream', { withCredentials: true })
+  const params = allWeeksSelected.value
+    ? ''
+    : '?' + selectedWeeks.value.map((w) => `week=${w}`).join('&')
+  const es = new EventSource('/api/admin/sync/push-stream' + params, { withCredentials: true })
   eventSource = es
   es.onmessage = (event) => {
     try {

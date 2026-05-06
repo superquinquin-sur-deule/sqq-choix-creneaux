@@ -4,19 +4,25 @@ import fr.sqq.choixcreneaux.application.command.SyncCooperatorsCommand;
 import fr.sqq.choixcreneaux.application.command.SyncPullCommand;
 import fr.sqq.choixcreneaux.application.command.SyncPushCommand;
 import fr.sqq.choixcreneaux.application.command.SyncPushOneCommand;
+import fr.sqq.choixcreneaux.domain.model.Week;
 import fr.sqq.mediator.Mediator;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import org.jboss.resteasy.reactive.RestStreamElementType;
 
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Path("/api/admin/sync")
@@ -37,16 +43,31 @@ public class AdminSyncResource {
     @Path("/push-stream")
     @Produces(MediaType.SERVER_SENT_EVENTS)
     @RestStreamElementType(MediaType.APPLICATION_JSON)
-    public Multi<SyncPushCommand.LogLine> pushStream() {
+    public Multi<SyncPushCommand.LogLine> pushStream(@QueryParam("week") List<String> weekParams) {
+        Set<Week> weeks = parseWeeks(weekParams);
         return Multi.createFrom().emitter(em ->
                 Infrastructure.getDefaultWorkerPool().execute(() -> {
                     try {
-                        mediator.send(new SyncPushCommand(em::emit));
+                        mediator.send(new SyncPushCommand(em::emit, weeks));
                         em.complete();
                     } catch (Throwable t) {
                         em.fail(t);
                     }
                 }));
+    }
+
+    private static Set<Week> parseWeeks(List<String> raw) {
+        if (raw == null || raw.isEmpty()) return EnumSet.allOf(Week.class);
+        EnumSet<Week> result = EnumSet.noneOf(Week.class);
+        for (String value : raw) {
+            if (value == null || value.isBlank()) continue;
+            try {
+                result.add(Week.valueOf(value.trim().toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                throw new BadRequestException("Invalid week: " + value);
+            }
+        }
+        return result.isEmpty() ? EnumSet.allOf(Week.class) : result;
     }
 
     @POST

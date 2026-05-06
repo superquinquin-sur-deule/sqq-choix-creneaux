@@ -1,6 +1,7 @@
 package fr.sqq.choixcreneaux.application.command;
 
 import fr.sqq.choixcreneaux.application.port.out.*;
+import fr.sqq.choixcreneaux.domain.model.Week;
 import fr.sqq.mediator.Command;
 import fr.sqq.mediator.CommandHandler;
 import io.quarkus.logging.Log;
@@ -8,12 +9,19 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
+import java.util.EnumSet;
+import java.util.Set;
 import java.util.function.Consumer;
 
-public record SyncPushCommand(Consumer<LogLine> logSink) implements Command<SyncPushCommand.Stats> {
+public record SyncPushCommand(Consumer<LogLine> logSink, Set<Week> weeks)
+        implements Command<SyncPushCommand.Stats> {
 
     public SyncPushCommand() {
-        this(line -> {});
+        this(line -> {}, EnumSet.allOf(Week.class));
+    }
+
+    public SyncPushCommand(Consumer<LogLine> logSink) {
+        this(logSink, EnumSet.allOf(Week.class));
     }
 
     public record Stats(int created, int moved, int unchanged, int failed) {
@@ -42,13 +50,26 @@ public record SyncPushCommand(Consumer<LogLine> logSink) implements Command<Sync
         @Transactional
         public Stats handle(SyncPushCommand command) {
             Consumer<LogLine> logSink = command.logSink() != null ? command.logSink() : line -> {};
-            Log.info("SyncPushCommand: pushing registrations to Odoo");
-            var registrations = registrationRepo.findAll();
+            Set<Week> weekFilter = command.weeks() == null || command.weeks().isEmpty()
+                    ? EnumSet.allOf(Week.class)
+                    : EnumSet.copyOf(command.weeks());
+            Log.infof("SyncPushCommand: pushing registrations to Odoo (weeks=%s)", weekFilter);
+            var allRegistrations = registrationRepo.findAll();
+            var registrations = allRegistrations.stream()
+                    .filter(reg -> {
+                        var slot = slotRepo.findById(reg.slotTemplateId()).orElse(null);
+                        return slot != null && weekFilter.contains(slot.week());
+                    })
+                    .toList();
             int total = registrations.size();
             int processed = 0;
             int created = 0, moved = 0, unchanged = 0, failed = 0;
+            String weeksLabel = weekFilter.size() == Week.values().length
+                    ? "toutes semaines"
+                    : "semaines " + weekFilter.stream().map(Enum::name).sorted().toList();
             logSink.accept(new LogLine("info",
-                    "Démarrage de la synchronisation : " + total + " inscription(s) à pousser.",
+                    "Démarrage de la synchronisation (" + weeksLabel + ") : "
+                            + total + " inscription(s) à pousser.",
                     0, total));
             for (var reg : registrations) {
                 processed++;

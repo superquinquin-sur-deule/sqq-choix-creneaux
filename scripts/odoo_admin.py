@@ -49,6 +49,15 @@ CSV_IGNORED_COLUMNS = ("week_name", "week_number")
 
 SEATS_AVAILABILITY_VALUES = ("limited", "unlimited")
 
+# product.category complete_names whose products' default_code should be cleared
+# by `clear-internal-references`. child_of is used so descendants are included.
+DEFAULT_CLEAR_REF_CATEGORIES = (
+    "Vrac sec",
+    "Vrac liquide",
+    "Produits frais / Fruits",
+    "Produits frais / Légumes",
+)
+
 # shift.template.week_list is a Selection of 2-letter codes (coop_shift module).
 # Accept the canonical code, numeric 0..6, or day names (en/fr) for convenience.
 WEEK_LIST_ALIASES = {
@@ -426,6 +435,58 @@ def sync_ticket_caps(odoo, template_ids=None, apply=False):
             ids, {"seats_max": cap, "seats_availability": "limited"}
         )
         print(f"Wrote seats_max={cap} on {len(ids)} ticket(s)")
+    return 0
+
+
+def clear_internal_references(odoo, categories=None, apply=False):
+    """Clear default_code (the "Référence interne" field) on every product.product
+    whose category — or any descendant of it — is in `categories`. Defaults to
+    bulk products and fresh fruits & vegetables.
+    """
+    cats = list(categories) if categories else list(DEFAULT_CLEAR_REF_CATEGORIES)
+    Cat = odoo.env["product.category"]
+    cat_id_by_name = {}
+    for name in cats:
+        ids = Cat.search([("complete_name", "=", name)])
+        if not ids:
+            print(f"  category not found: {name!r}", file=sys.stderr)
+            continue
+        if len(ids) > 1:
+            print(f"  ambiguous category {name!r}: {ids}", file=sys.stderr)
+            continue
+        cat_id_by_name[name] = ids[0]
+
+    if not cat_id_by_name:
+        print("ERROR: no categories matched", file=sys.stderr)
+        return 1
+
+    Product = odoo.env["product.product"]
+    print(f"\n{'Applying' if apply else 'Dry-run:'} clear default_code on "
+          f"products in {len(cat_id_by_name)} categor"
+          f"{'ies' if len(cat_id_by_name) > 1 else 'y'}")
+
+    all_pids = []
+    for name, cid in cat_id_by_name.items():
+        ids = Product.search([
+            ("categ_id", "child_of", cid),
+            ("default_code", "!=", False),
+        ])
+        records = Product.read(ids, ["id", "name", "default_code", "categ_id"])
+        print(f"  {name} (id={cid}): {len(records)} product(s) with default_code")
+        for r in records:
+            categ_label = r["categ_id"][1] if r.get("categ_id") else None
+            print(f"    id={r['id']} default_code={r['default_code']!r} "
+                  f"name={r.get('name')!r} categ={categ_label!r}")
+        all_pids.extend(ids)
+
+    print(f"\nSummary: {len(all_pids)} product(s) to update")
+    if not apply:
+        print("(dry-run; rerun with --apply to write)")
+        return 0
+    if not all_pids:
+        return 0
+    Product.write(all_pids, {"default_code": False})
+    print(f"Wrote default_code=False on {len(all_pids)} product(s).")
     return 0
 
 
