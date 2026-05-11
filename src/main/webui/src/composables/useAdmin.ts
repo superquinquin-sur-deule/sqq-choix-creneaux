@@ -173,7 +173,7 @@ export function usePushOneRegistration() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (cooperatorId: string) =>
-      customFetch<{ data: { pushed: boolean; reason: string | null } }>(
+      customFetch<{ data: { pushed: boolean; reason: string | null; outcome: string | null } }>(
         '/api/admin/sync/push-one',
         {
           method: 'POST',

@@ -60,7 +60,8 @@ public class PanacheCooperatorRepository implements CooperatorRepository {
 
     private static final String WITHOUT_REGISTRATION_FROM =
             " FROM cooperator c LEFT JOIN slot_registration sr ON c.id = sr.cooperator_id";
-    private static final String WITHOUT_REGISTRATION_WHERE = " WHERE sr.id IS NULL";
+    private static final String WITHOUT_REGISTRATION_WHERE =
+            " WHERE sr.id IS NULL AND c.exemption_reason IS NULL";
 
     @Override
     @SuppressWarnings("unchecked")
@@ -95,6 +96,7 @@ public class PanacheCooperatorRepository implements CooperatorRepository {
 
     private static final String SEARCH_WITHOUT_REGISTRATION_WHERE =
             " WHERE sr.id IS NULL" +
+            " AND c.exemption_reason IS NULL" +
             " AND (LOWER(c.first_name) LIKE ?1 OR LOWER(c.last_name) LIKE ?1 OR LOWER(c.email) LIKE ?1)";
 
     @Override
@@ -127,6 +129,7 @@ public class PanacheCooperatorRepository implements CooperatorRepository {
             " LEFT JOIN email_log el ON el.cooperator_id = c.id AND el.type = 'REMINDER'" +
             " WHERE sr.id IS NULL" +
             " AND el.id IS NULL" +
+            " AND c.exemption_reason IS NULL" +
             " AND (LOWER(c.first_name) LIKE ?1 OR LOWER(c.last_name) LIKE ?1 OR LOWER(c.email) LIKE ?1)";
 
     @Override
@@ -158,7 +161,8 @@ public class PanacheCooperatorRepository implements CooperatorRepository {
 
     private static final String SEARCH_FROM = " FROM cooperator c";
     private static final String SEARCH_WHERE =
-            " WHERE LOWER(c.first_name) LIKE ?1 OR LOWER(c.last_name) LIKE ?1 OR LOWER(c.email) LIKE ?1";
+            " WHERE c.exemption_reason IS NULL" +
+            " AND (LOWER(c.first_name) LIKE ?1 OR LOWER(c.last_name) LIKE ?1 OR LOWER(c.email) LIKE ?1)";
 
     @Override
     @SuppressWarnings("unchecked")
@@ -175,7 +179,8 @@ public class PanacheCooperatorRepository implements CooperatorRepository {
     }
 
     private static final String WITH_REGISTRATION_WHERE_BASE =
-            " WHERE EXISTS (SELECT 1 FROM slot_registration sr WHERE sr.cooperator_id = c.id)";
+            " WHERE c.exemption_reason IS NULL" +
+            " AND EXISTS (SELECT 1 FROM slot_registration sr WHERE sr.cooperator_id = c.id)";
     private static final String SEARCH_WITH_REGISTRATION_WHERE =
             WITH_REGISTRATION_WHERE_BASE +
             " AND (LOWER(c.first_name) LIKE ?1 OR LOWER(c.last_name) LIKE ?1 OR LOWER(c.email) LIKE ?1)";
@@ -214,11 +219,18 @@ public class PanacheCooperatorRepository implements CooperatorRepository {
     }
 
     @Override
-    public long countTotal() { return CooperatorEntity.count(); }
+    public long countTotal() {
+        return ((Number) em.createNativeQuery(
+                "SELECT COUNT(*) FROM cooperator WHERE exemption_reason IS NULL")
+                .getSingleResult()).longValue();
+    }
 
     @Override
     public long countWithRegistration() {
-        return ((Number) em.createNativeQuery("SELECT COUNT(DISTINCT cooperator_id) FROM slot_registration")
+        return ((Number) em.createNativeQuery(
+                "SELECT COUNT(DISTINCT sr.cooperator_id) FROM slot_registration sr" +
+                " JOIN cooperator c ON c.id = sr.cooperator_id" +
+                " WHERE c.exemption_reason IS NULL")
                 .getSingleResult()).longValue();
     }
 
