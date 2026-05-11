@@ -85,6 +85,14 @@
         <button
           type="button"
           class="rounded-md px-3 py-1 font-medium transition"
+          :class="filter === 'exempted' ? 'bg-dark text-white' : 'text-dark hover:bg-gray-100'"
+          @click="filter = 'exempted'"
+        >
+          Exempté·es
+        </button>
+        <button
+          type="button"
+          class="rounded-md px-3 py-1 font-medium transition"
           :class="filter === 'all' ? 'bg-dark text-white' : 'text-dark hover:bg-gray-100'"
           @click="filter = 'all'"
         >
@@ -118,6 +126,10 @@
         Aucun·e coopérateur·ice n'a encore choisi de créneau.
       </div>
 
+      <div v-else-if="total === 0 && filter === 'exempted'" class="flex-1 rounded-lg border border-dashed border-gray-200 py-8 text-center text-brown/50">
+        Aucun·e coopérateur·ice exempté·e.
+      </div>
+
       <div v-else-if="total === 0" class="flex-1 rounded-lg border border-dashed border-gray-200 py-8 text-center text-brown/50">
         Aucun·e coopérateur·ice.
       </div>
@@ -137,7 +149,7 @@
                     Email<span class="w-3 text-xs">{{ sortIndicator('email') }}</span>
                   </button>
                 </th>
-                <th class="px-4 py-3 text-left font-medium text-brown/70">Créneau choisi</th>
+                <th class="px-4 py-3 text-left font-medium text-brown/70">{{ filter === 'exempted' ? 'Raison d’exemption' : 'Créneau choisi' }}</th>
                 <th class="px-4 py-3 text-left font-medium text-brown/70">
                   <button type="button" class="inline-flex items-center gap-1 hover:text-dark" @click="toggleSort('lastReminder')">
                     Dernière relance<span class="w-3 text-xs">{{ sortIndicator('lastReminder') }}</span>
@@ -151,7 +163,8 @@
                 <td class="px-4 py-3 font-medium text-dark">{{ coop.firstName }} {{ coop.lastName }}</td>
                 <td class="px-4 py-3 text-brown/70">{{ coop.email }}</td>
                 <td class="px-4 py-3 text-brown/70">
-                  <span v-if="coop.slot">{{ formatSlot(coop.slot) }}</span>
+                  <span v-if="coop.exemptionReason">{{ coop.exemptionReason }}</span>
+                  <span v-else-if="coop.slot">{{ formatSlot(coop.slot) }}</span>
                   <span v-else class="text-brown/40">—</span>
                 </td>
                 <td class="px-4 py-3 text-brown/70">
@@ -217,11 +230,12 @@ import { dayLabel, formatTime } from '@/composables/useSlots'
 const page = ref(1)
 const size = ref(10)
 const search = ref('')
-type Filter = 'pending' | 'new' | 'withSlot' | 'all'
+type Filter = 'pending' | 'new' | 'withSlot' | 'exempted' | 'all'
 const filter = ref<Filter>('pending')
 const withoutSlotOnly = computed(() => filter.value === 'pending' || filter.value === 'new')
 const withSlotOnly = computed(() => filter.value === 'withSlot')
 const neverRemindedOnly = computed(() => filter.value === 'new')
+const exemptedOnly = computed(() => filter.value === 'exempted')
 const sortBy = ref<CooperatorSortField>('name')
 const sortDir = ref<SortDirection>('asc')
 
@@ -243,13 +257,14 @@ const titleByFilter: Record<Filter, string> = {
   pending: 'Coopérateur·ices sans créneau',
   new: 'Nouveaux coopérateur·ices',
   withSlot: 'Coopérateur·ices avec créneau',
+  exempted: 'Coopérateur·ices exempté·es',
   all: 'Coopérateur·ices',
 }
 
 watch([search, filter], () => { page.value = 1 })
 
 const { data: pageData, isPending } = usePendingCooperators(
-  page, size, search, withoutSlotOnly, neverRemindedOnly, sortBy, sortDir, withSlotOnly,
+  page, size, search, withoutSlotOnly, neverRemindedOnly, sortBy, sortDir, withSlotOnly, exemptedOnly,
 )
 
 const items = computed(() => pageData.value?.items ?? [])

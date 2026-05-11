@@ -27,6 +27,7 @@ export interface CooperatorResponse {
   lastName: string
   lastReminderAt: string | null
   slot: CooperatorSlotResponse | null
+  exemptionReason: string | null
 }
 
 export interface RegistrantResponse {
@@ -85,18 +86,20 @@ export function usePendingCooperators(
   sortBy?: Ref<CooperatorSortField>,
   sortDir?: Ref<SortDirection>,
   withSlotOnly?: Ref<boolean>,
+  exemptedOnly?: Ref<boolean>,
 ) {
   return useQuery({
     queryKey: [
       'admin', 'cooperators', page, size,
       q ?? '', withoutSlotOnly ?? true, neverRemindedOnly ?? false,
-      sortBy ?? 'name', sortDir ?? 'asc', withSlotOnly ?? false,
+      sortBy ?? 'name', sortDir ?? 'asc', withSlotOnly ?? false, exemptedOnly ?? false,
     ],
     queryFn: () => {
       const search = q?.value?.trim() ?? ''
       const onlyPending = withoutSlotOnly?.value ?? true
       const onlyWithSlot = withSlotOnly?.value ?? false
       const onlyNew = neverRemindedOnly?.value ?? false
+      const onlyExempted = exemptedOnly?.value ?? false
       const by = sortBy?.value ?? 'name'
       const dir = sortDir?.value ?? 'asc'
       const qs =
@@ -105,6 +108,7 @@ export function usePendingCooperators(
         `&withoutSlotOnly=${onlyPending}` +
         `&withSlotOnly=${onlyWithSlot}` +
         `&neverRemindedOnly=${onlyNew}` +
+        `&exemptedOnly=${onlyExempted}` +
         `&sortBy=${by}&sortDir=${dir}`
       return customFetch<{ data: CooperatorsPage }>(
         `/api/admin/cooperators?${qs}`,

@@ -228,7 +228,7 @@ public class OdooXmlRpcClient implements OdooSyncPort {
         String lastName = nameParts[0].trim();
         String firstName = nameParts.length > 1 ? nameParts[1].trim() : "";
 
-        return new Cooperator(UUID.randomUUID(), email, firstName, lastName, odooId, barcodeBase);
+        return new Cooperator(UUID.randomUUID(), email, firstName, lastName, odooId, barcodeBase, null);
     }
 
     @Override

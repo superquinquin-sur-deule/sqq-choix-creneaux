@@ -37,14 +37,16 @@ public class AdminCooperatorResource {
             @QueryParam("withoutSlotOnly") @DefaultValue("true") boolean withoutSlotOnly,
             @QueryParam("withSlotOnly") @DefaultValue("false") boolean withSlotOnly,
             @QueryParam("neverRemindedOnly") @DefaultValue("false") boolean neverRemindedOnly,
+            @QueryParam("exemptedOnly") @DefaultValue("false") boolean exemptedOnly,
             @QueryParam("sortBy") @DefaultValue("name") String sortBy,
             @QueryParam("sortDir") @DefaultValue("asc") String sortDir) {
         CooperatorSort sort = CooperatorSort.of(sortBy, sortDir);
-        PendingCooperatorsPage result = mediator.send(new GetPendingCooperatorsPageQuery(page, size, q, withoutSlotOnly, withSlotOnly, neverRemindedOnly, sort));
+        PendingCooperatorsPage result = mediator.send(new GetPendingCooperatorsPageQuery(page, size, q, withoutSlotOnly, withSlotOnly, neverRemindedOnly, exemptedOnly, sort));
         List<CooperatorResponse> items = result.items().stream()
                 .map(c -> new CooperatorResponse(c.id(), c.email(), c.firstName(), c.lastName(),
                         result.lastReminderByCooperatorId().get(c.id()),
-                        SlotResponse.from(result.slotByCooperatorId().get(c.id()))))
+                        SlotResponse.from(result.slotByCooperatorId().get(c.id())),
+                        c.exemptionReason()))
                 .toList();
         return new PageResponse(items, result.total(), page, size);
     }
@@ -60,7 +62,8 @@ public class AdminCooperatorResource {
         List<CooperatorResponse> items = result.items().stream()
                 .map(c -> new CooperatorResponse(c.id(), c.email(), c.firstName(), c.lastName(),
                         result.lastReminderByCooperatorId().get(c.id()),
-                        SlotResponse.from(result.slotByCooperatorId().get(c.id()))))
+                        SlotResponse.from(result.slotByCooperatorId().get(c.id())),
+                        c.exemptionReason()))
                 .toList();
         return new PageResponse(items, result.total(), page, size);
     }
@@ -80,7 +83,7 @@ public class AdminCooperatorResource {
         return sb.toString();
     }
 
-    public record CooperatorResponse(UUID id, String email, String firstName, String lastName, Instant lastReminderAt, SlotResponse slot) {}
+    public record CooperatorResponse(UUID id, String email, String firstName, String lastName, Instant lastReminderAt, SlotResponse slot, String exemptionReason) {}
 
     public record SlotResponse(String week, String dayOfWeek, String startTime, String endTime) {
         static SlotResponse from(CooperatorSlotSummary s) {

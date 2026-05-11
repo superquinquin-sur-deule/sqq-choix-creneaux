@@ -16,30 +16,34 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public record GetPendingCooperatorsPageQuery(int page, int size, String q, boolean withoutSlotOnly, boolean withSlotOnly, boolean neverRemindedOnly, CooperatorSort sort) implements Query<PendingCooperatorsPage> {
+public record GetPendingCooperatorsPageQuery(int page, int size, String q, boolean withoutSlotOnly, boolean withSlotOnly, boolean neverRemindedOnly, boolean exemptedOnly, CooperatorSort sort) implements Query<PendingCooperatorsPage> {
 
     public GetPendingCooperatorsPageQuery {
         if (sort == null) sort = CooperatorSort.DEFAULT;
     }
 
+    public GetPendingCooperatorsPageQuery(int page, int size, String q, boolean withoutSlotOnly, boolean withSlotOnly, boolean neverRemindedOnly, CooperatorSort sort) {
+        this(page, size, q, withoutSlotOnly, withSlotOnly, neverRemindedOnly, false, sort);
+    }
+
     public GetPendingCooperatorsPageQuery(int page, int size) {
-        this(page, size, null, true, false, false, CooperatorSort.DEFAULT);
+        this(page, size, null, true, false, false, false, CooperatorSort.DEFAULT);
     }
 
     public GetPendingCooperatorsPageQuery(int page, int size, String q) {
-        this(page, size, q, true, false, false, CooperatorSort.DEFAULT);
+        this(page, size, q, true, false, false, false, CooperatorSort.DEFAULT);
     }
 
     public GetPendingCooperatorsPageQuery(int page, int size, String q, boolean withoutSlotOnly) {
-        this(page, size, q, withoutSlotOnly, false, false, CooperatorSort.DEFAULT);
+        this(page, size, q, withoutSlotOnly, false, false, false, CooperatorSort.DEFAULT);
     }
 
     public GetPendingCooperatorsPageQuery(int page, int size, String q, boolean withoutSlotOnly, boolean neverRemindedOnly) {
-        this(page, size, q, withoutSlotOnly, false, neverRemindedOnly, CooperatorSort.DEFAULT);
+        this(page, size, q, withoutSlotOnly, false, neverRemindedOnly, false, CooperatorSort.DEFAULT);
     }
 
     public GetPendingCooperatorsPageQuery(int page, int size, String q, boolean withoutSlotOnly, boolean neverRemindedOnly, CooperatorSort sort) {
-        this(page, size, q, withoutSlotOnly, false, neverRemindedOnly, sort);
+        this(page, size, q, withoutSlotOnly, false, neverRemindedOnly, false, sort);
     }
 
     private boolean hasQuery() {
@@ -70,7 +74,11 @@ public record GetPendingCooperatorsPageQuery(int page, int size, String q, boole
             CooperatorSort sort = query.sort() != null ? query.sort() : CooperatorSort.DEFAULT;
             long total;
             java.util.List<Cooperator> items;
-            if (query.withoutSlotOnly()) {
+            if (query.exemptedOnly()) {
+                String q = query.hasQuery() ? query.q() : "";
+                total = cooperatorRepo.countSearchExempted(q);
+                items = cooperatorRepo.searchExempted(q, offset, size, sort);
+            } else if (query.withoutSlotOnly()) {
                 String q = query.hasQuery() ? query.q() : "";
                 if (query.neverRemindedOnly()) {
                     total = cooperatorRepo.countSearchWithoutRegistrationNeverReminded(q);

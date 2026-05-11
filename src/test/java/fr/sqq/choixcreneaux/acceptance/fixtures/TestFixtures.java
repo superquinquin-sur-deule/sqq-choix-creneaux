@@ -67,7 +67,7 @@ public class TestFixtures {
     @Transactional
     public void seedCooperator(UUID id, String email, String firstName, String lastName, String barcodeBase) {
         cooperatorRepo.saveAll(List.of(
-                new Cooperator(id, email, firstName, lastName, null, barcodeBase)
+                new Cooperator(id, email, firstName, lastName, null, barcodeBase, null)
         ));
     }
 }

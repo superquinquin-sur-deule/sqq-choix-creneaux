@@ -18,6 +18,8 @@ public interface CooperatorRepository {
     long countSearch(String q);
     List<Cooperator> searchWithRegistration(String q, int offset, int limit, CooperatorSort sort);
     long countSearchWithRegistration(String q);
+    List<Cooperator> searchExempted(String q, int offset, int limit, CooperatorSort sort);
+    long countSearchExempted(String q);
     long countTotal();
     long countWithRegistration();
     void saveAll(List<Cooperator> cooperators);

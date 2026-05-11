@@ -33,7 +33,7 @@ public class BrevoEmailSender implements EmailSender {
     boolean enabled;
 
     @ConfigProperty(name = "brevo.api-key", defaultValue = "")
-    String apiKey;
+    String apiKey; 
 
     @ConfigProperty(name = "brevo.confirmation-template-id", defaultValue = "0")
     int confirmationTemplateId;

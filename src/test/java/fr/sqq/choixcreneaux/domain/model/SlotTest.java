@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class SlotTest {
 
     private static final UUID SLOT_ID = UUID.randomUUID();
-    private static final Cooperator COOP = new Cooperator(UUID.randomUUID(), "a@b.com", "A", "B", null, "1");
+    private static final Cooperator COOP = new Cooperator(UUID.randomUUID(), "a@b.com", "A", "B", null, "1", null);
     private static final Campaign OPEN = new Campaign(CampaignStatus.OPEN, LocalDate.of(2026, 5, 18), LocalDate.of(2015, 12, 28));
     private static final Campaign CLOSED = new Campaign(CampaignStatus.CLOSED, LocalDate.of(2026, 5, 18), LocalDate.of(2015, 12, 28));
 

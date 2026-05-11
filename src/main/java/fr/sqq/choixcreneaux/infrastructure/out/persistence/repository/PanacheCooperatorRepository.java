@@ -209,6 +209,33 @@ public class PanacheCooperatorRepository implements CooperatorRepository {
                 .getSingleResult()).longValue();
     }
 
+    private static final String EXEMPTED_WHERE =
+            " WHERE c.exemption_reason IS NOT NULL" +
+            " AND (LOWER(c.first_name) LIKE ?1 OR LOWER(c.last_name) LIKE ?1 OR LOWER(c.email) LIKE ?1)";
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public List<Cooperator> searchExempted(String q, int offset, int limit, CooperatorSort sort) {
+        String pattern = "%" + (q == null ? "" : q.trim().toLowerCase()) + "%";
+        return em.createNativeQuery(
+                "SELECT c.*" + SEARCH_FROM + reminderJoin(sort) + EXEMPTED_WHERE + orderBy(sort),
+                CooperatorEntity.class)
+                .setParameter(1, pattern)
+                .setFirstResult(offset)
+                .setMaxResults(limit)
+                .getResultList().stream()
+                .map(e -> mapper.toDomain((CooperatorEntity) e)).toList();
+    }
+
+    @Override
+    public long countSearchExempted(String q) {
+        String pattern = "%" + (q == null ? "" : q.trim().toLowerCase()) + "%";
+        return ((Number) em.createNativeQuery(
+                "SELECT COUNT(*)" + SEARCH_FROM + EXEMPTED_WHERE)
+                .setParameter(1, pattern)
+                .getSingleResult()).longValue();
+    }
+
     @Override
     public long countSearch(String q) {
         String pattern = "%" + (q == null ? "" : q.trim().toLowerCase()) + "%";
