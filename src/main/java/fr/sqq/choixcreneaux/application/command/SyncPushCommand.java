@@ -5,11 +5,13 @@ import fr.sqq.choixcreneaux.domain.model.Week;
 import fr.sqq.mediator.Command;
 import fr.sqq.mediator.CommandHandler;
 import io.quarkus.logging.Log;
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -47,21 +49,14 @@ public record SyncPushCommand(Consumer<LogLine> logSink, Set<Week> weeks)
         }
 
         @Override
-        @Transactional
         public Stats handle(SyncPushCommand command) {
             Consumer<LogLine> logSink = command.logSink() != null ? command.logSink() : line -> {};
             Set<Week> weekFilter = command.weeks() == null || command.weeks().isEmpty()
                     ? EnumSet.allOf(Week.class)
                     : EnumSet.copyOf(command.weeks());
             Log.infof("SyncPushCommand: pushing registrations to Odoo (weeks=%s)", weekFilter);
-            var allRegistrations = registrationRepo.findAll();
-            var registrations = allRegistrations.stream()
-                    .filter(reg -> {
-                        var slot = slotRepo.findById(reg.slotTemplateId()).orElse(null);
-                        return slot != null && weekFilter.contains(slot.week());
-                    })
-                    .toList();
-            int total = registrations.size();
+            List<Job> jobs = QuarkusTransaction.requiringNew().call(() -> prepareJobs(weekFilter));
+            int total = jobs.size();
             int processed = 0;
             int created = 0, moved = 0, unchanged = 0, failed = 0;
             String weeksLabel = weekFilter.size() == Week.values().length
@@ -71,26 +66,21 @@ public record SyncPushCommand(Consumer<LogLine> logSink, Set<Week> weeks)
                     "Démarrage de la synchronisation (" + weeksLabel + ") : "
                             + total + " inscription(s) à pousser.",
                     0, total));
-            for (var reg : registrations) {
+            for (Job job : jobs) {
                 processed++;
-                var slot = slotRepo.findById(reg.slotTemplateId()).orElse(null);
-                var coop = cooperatorRepo.findById(reg.cooperatorId()).orElse(null);
-                String coopLabel = coop != null
-                        ? (coop.firstName() + " " + coop.lastName()).trim()
-                        : reg.cooperatorId().toString();
-                if (slot == null || coop == null || slot.odooTemplateId() == null || coop.odooPartnerId() == null) {
+                if (job.missingIds()) {
                     failed++;
-                    String msg = "IDs Odoo manquants pour " + coopLabel + " — ignoré.";
-                    Log.warnf("Skipping registration %s: missing Odoo IDs", reg.id());
+                    String msg = "IDs Odoo manquants pour " + job.coopLabel() + " — ignoré.";
+                    Log.warnf("Skipping registration %s: missing Odoo IDs", job.registrationId());
                     logSink.accept(new LogLine("warn", msg, processed, total));
                     continue;
                 }
                 try {
-                    PushOutcome outcome = odoo.pushRegistration(coop.odooPartnerId(), slot.odooTemplateId());
+                    PushOutcome outcome = odoo.pushRegistration(job.odooPartnerId(), job.odooTemplateId());
                     String msg = switch (outcome) {
-                        case CREATED -> coopLabel + " : inscription créée dans Odoo.";
-                        case MOVED -> coopLabel + " : inscription déplacée vers le nouveau créneau.";
-                        case UNCHANGED -> coopLabel + " : déjà à jour, rien à faire.";
+                        case CREATED -> job.coopLabel() + " : inscription créée dans Odoo.";
+                        case MOVED -> job.coopLabel() + " : inscription déplacée vers le nouveau créneau.";
+                        case UNCHANGED -> job.coopLabel() + " : déjà à jour, rien à faire.";
                     };
                     switch (outcome) {
                         case CREATED -> created++;
@@ -100,9 +90,9 @@ public record SyncPushCommand(Consumer<LogLine> logSink, Set<Week> weeks)
                     logSink.accept(new LogLine("info", msg, processed, total));
                 } catch (Exception e) {
                     failed++;
-                    Log.errorf("Failed to push registration %s: %s", reg.id(), e.getMessage());
+                    Log.errorf("Failed to push registration %s: %s", job.registrationId(), e.getMessage());
                     logSink.accept(new LogLine("error",
-                            coopLabel + " : échec — " + e.getMessage(),
+                            job.coopLabel() + " : échec — " + e.getMessage(),
                             processed, total));
                 }
             }
@@ -112,5 +102,31 @@ public record SyncPushCommand(Consumer<LogLine> logSink, Set<Week> weeks)
                     processed, total));
             return new Stats(created, moved, unchanged, failed);
         }
+
+        private List<Job> prepareJobs(Set<Week> weekFilter) {
+            var registrations = registrationRepo.findAll();
+            List<Job> jobs = new ArrayList<>(registrations.size());
+            for (var reg : registrations) {
+                var slot = slotRepo.findById(reg.slotTemplateId()).orElse(null);
+                if (slot == null || !weekFilter.contains(slot.week())) continue;
+                var coop = cooperatorRepo.findById(reg.cooperatorId()).orElse(null);
+                String coopLabel = coop != null
+                        ? (coop.firstName() + " " + coop.lastName()).trim()
+                        : reg.cooperatorId().toString();
+                boolean missing = coop == null
+                        || slot.odooTemplateId() == null
+                        || coop.odooPartnerId() == null;
+                jobs.add(new Job(
+                        reg.id(),
+                        coopLabel,
+                        missing ? 0L : coop.odooPartnerId(),
+                        missing ? 0L : slot.odooTemplateId(),
+                        missing));
+            }
+            return jobs;
+        }
+
+        private record Job(java.util.UUID registrationId, String coopLabel,
+                           long odooPartnerId, long odooTemplateId, boolean missingIds) {}
     }
 }
